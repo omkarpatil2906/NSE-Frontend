@@ -39,11 +39,7 @@ const NSEDashboard = () => {
       
       // Add price filter for Price Spurts
       if (activeTab === 'price-spurts') {
-        if (priceFilter === 'above20') {
-          url += '&minPrice=20';
-        } else if (priceFilter === 'below20') {
-          url += '&maxPrice=20';
-        }
+        url += `&priceFilter=${priceFilter}`;
       }
       
       console.log('Fetching:', url);
