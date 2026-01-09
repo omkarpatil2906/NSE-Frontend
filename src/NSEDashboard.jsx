@@ -6,14 +6,21 @@ const NSEDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
-  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [autoRefresh, setAutoRefresh] = useState(false);
   
   // Filters
-  const [segment, setSegment] = useState('main');
-  const [category, setCategory] = useState('equity');
+  const [activeTab, setActiveTab] = useState('main-board');
   const [sort, setSort] = useState('value');
 
   const API_BASE = 'http://localhost:5000';
+
+  const tabs = [
+    { id: 'main-board', label: 'Main Board' },
+    { id: 'sme', label: 'SME' },
+    { id: 'etf', label: 'ETFs' },
+    { id: 'price-spurts', label: 'Price Spurts' },
+    { id: 'volume-spurts', label: 'Volume Spurts' }
+  ];
 
   const fetchData = async () => {
     try {
@@ -21,7 +28,7 @@ const NSEDashboard = () => {
       setError(null);
       
       const response = await fetch(
-        `${API_BASE}/api/market/most-active?segment=${segment}&category=${category}&sort=${sort}`
+        `${API_BASE}/api/market/most-active?tab=${activeTab}&sort=${sort}`
       );
       
       if (!response.ok) throw new Error('Failed to fetch data');
@@ -37,21 +44,21 @@ const NSEDashboard = () => {
     }
   };
 
-  // Initial fetch
+  // Initial fetch and when filters change
   useEffect(() => {
     fetchData();
-  }, [segment, category, sort]);
+  }, [activeTab, sort]);
 
-  // Auto-refresh every 5 seconds
+  // Auto refresh
   useEffect(() => {
     if (!autoRefresh) return;
     
     const interval = setInterval(() => {
       fetchData();
-    }, 5000);
-
+    }, 30000); // 30 seconds
+    
     return () => clearInterval(interval);
-  }, [autoRefresh, segment, category, sort]);
+  }, [autoRefresh, activeTab, sort]);
 
   const formatNumber = (num) => {
     if (!num) return '0';
@@ -75,7 +82,14 @@ const NSEDashboard = () => {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <Activity className="w-8 h-8 text-blue-600" />
-              <h1 className="text-3xl font-bold text-gray-800">NSE Live Market Data</h1>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-800">NSE Live Market Data</h1>
+                {lastUpdate && (
+                  <p className="text-sm text-gray-600 mt-1">
+                    Last updated: {lastUpdate.toLocaleTimeString()}
+                  </p>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-4">
               <button
@@ -98,59 +112,52 @@ const NSEDashboard = () => {
               </button>
             </div>
           </div>
-
-          {lastUpdate && (
-            <p className="text-sm text-gray-600">
-              Last updated: {lastUpdate.toLocaleTimeString()}
-            </p>
-          )}
         </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Segment
-              </label>
-              <select
-                value={segment}
-                onChange={(e) => setSegment(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        {/* Tabs */}
+        <div className="bg-white rounded-lg shadow-lg mb-6">
+          <div className="flex border-b overflow-x-auto">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-6 py-4 font-medium whitespace-nowrap transition-colors ${
+                  activeTab === tab.id
+                    ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                }`}
               >
-                <option value="main">Main Market</option>
-                <option value="sme">SME</option>
-                <option value="etf">ETF</option>
-              </select>
-            </div>
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Category
-              </label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="equity">Most Active by Value</option>
-                <option value="price">Price Spurts</option>
-                <option value="volume">Volume Spurts</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Sort By
-              </label>
-              <select
-                value={sort}
-                onChange={(e) => setSort(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="value">Turnover (Value)</option>
-                <option value="volume">Volume</option>
-              </select>
+          {/* Sort By */}
+          <div className="p-4 border-b bg-gray-50">
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-medium text-gray-700">Sort By:</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setSort('volume')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    sort === 'volume'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                  }`}
+                >
+                  Volume
+                </button>
+                <button
+                  onClick={() => setSort('value')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    sort === 'value'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                  }`}
+                >
+                  Value
+                </button>
+              </div>
             </div>
           </div>
         </div>
