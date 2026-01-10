@@ -142,18 +142,24 @@ const NSEDashboard = () => {
   // Handle tab/filter changes
   useEffect(() => {
     if (socketRef.current && socketRef.current.connected) {
-      addDebugLog(`🔄 Resubscribing: ${activeTab}, sort: ${sort}, filter: ${priceFilter}`);
+      addDebugLog(`🔄 Tab/Filter changed: ${activeTab}, sort: ${sort}, filter: ${priceFilter}`);
       setLoading(true);
+      setData([]); // Clear old data immediately
       
       // Unsubscribe from previous
+      addDebugLog('   📤 Unsubscribing from previous...');
       socketRef.current.emit('unsubscribe');
       
-      // Subscribe to new
-      socketRef.current.emit('subscribe', {
-        tab: activeTab,
-        sort,
-        priceFilter
-      });
+      // Small delay to ensure unsubscribe processes
+      setTimeout(() => {
+        addDebugLog(`   📤 Subscribing to new: ${activeTab}`);
+        // Subscribe to new
+        socketRef.current.emit('subscribe', {
+          tab: activeTab,
+          sort,
+          priceFilter
+        });
+      }, 100);
     }
   }, [activeTab, sort, priceFilter]);
 
@@ -195,7 +201,7 @@ const NSEDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+    <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
@@ -328,7 +334,7 @@ const NSEDashboard = () => {
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+              <thead className="bg-linear-to-r from-blue-600 to-indigo-600 text-white">
                 <tr>
                   <th className="px-6 py-4 text-left text-sm font-semibold">#</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold">Symbol</th>
