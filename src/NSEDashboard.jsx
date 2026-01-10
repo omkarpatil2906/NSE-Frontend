@@ -1,19 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { RefreshCw, TrendingUp, TrendingDown, Activity, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { RefreshCw, TrendingUp, TrendingDown, Activity, ChevronDown, Wifi, WifiOff } from 'lucide-react';
+
+// Socket.io client - import from CDN if npm package not available
+let io;
+if (typeof window !== 'undefined') {
+  if (window.io) {
+    io = window.io;
+  } else {
+    // Fallback: load from CDN
+    const script = document.createElement('script');
+    script.src = 'https://cdn.socket.io/4.6.1/socket.io.min.js';
+    script.async = true;
+    document.head.appendChild(script);
+  }
+}
 
 const NSEDashboard = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
-  const [autoRefresh, setAutoRefresh] = useState(false);
-  const [responseInfo, setResponseInfo] = useState(null);
+  const [connectionStatus, setConnectionStatus] = useState('disconnected');
+  const [updateCount, setUpdateCount] = useState(0);
+  const [debugLogs, setDebugLogs] = useState([]);
   
   // Filters
   const [activeTab, setActiveTab] = useState('main-board');
   const [sort, setSort] = useState('value');
-  const [priceFilter, setPriceFilter] = useState('above20'); // Default to above20, removed 'all'
+  const [priceFilter, setPriceFilter] = useState('above20');
 
+  const socketRef = useRef(null);
   const API_BASE = 'http://localhost:5000';
 
   const tabs = [
@@ -24,57 +40,122 @@ const NSEDashboard = () => {
     { id: 'volume-spurts', label: 'Volume Spurts', hasSort: false }
   ];
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      let url = `${API_BASE}/api/market/most-active?tab=${activeTab}`;
-      
-      // Add sort for tabs that support it
-      const currentTab = tabs.find(t => t.id === activeTab);
-      if (currentTab?.hasSort) {
-        url += `&sort=${sort}`;
-      }
-      
-      // Add price filter for Price Spurts
-      if (activeTab === 'price-spurts') {
-        url += `&priceFilter=${priceFilter}`;
-      }
-      
-      console.log('Fetching:', url);
-      
-      const response = await fetch(url);
-      
-      if (!response.ok) throw new Error('Failed to fetch data');
-      
-      const result = await response.json();
-      setData(result.data || []);
-      setResponseInfo(result);
-      setLastUpdate(new Date());
-    } catch (err) {
-      setError(err.message);
-      console.error('Fetch error:', err);
-    } finally {
-      setLoading(false);
-    }
+  const addDebugLog = (message) => {
+    const timestamp = new Date().toLocaleTimeString();
+    console.log(`[${timestamp}] ${message}`);
+    setDebugLogs(prev => [...prev.slice(-10), `[${timestamp}] ${message}`]);
   };
 
-  // Initial fetch and when filters change
+  // Initialize WebSocket connection
   useEffect(() => {
-    fetchData();
-  }, [activeTab, sort, priceFilter]);
+    addDebugLog('🔌 Starting WebSocket initialization...');
+    
+    // Wait for socket.io to be available
+    const initSocket = () => {
+      if (!window.io) {
+        addDebugLog('⏳ Waiting for socket.io library...');
+        setTimeout(initSocket, 100);
+        return;
+      }
 
-  // Auto refresh
+      addDebugLog('✅ Socket.io library loaded');
+      
+      const socket = window.io(API_BASE, {
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5
+      });
+
+      socketRef.current = socket;
+
+      socket.on('connect', () => {
+        addDebugLog('✅ WebSocket connected');
+        setConnectionStatus('connected');
+        setError(null);
+        
+        // Subscribe to current tab/filter
+        addDebugLog(`📡 Subscribing to: ${activeTab}`);
+        socket.emit('subscribe', {
+          tab: activeTab,
+          sort,
+          priceFilter
+        });
+      });
+
+      socket.on('disconnect', () => {
+        addDebugLog('❌ WebSocket disconnected');
+        setConnectionStatus('disconnected');
+      });
+
+      socket.on('connect_error', (err) => {
+        addDebugLog(`❌ Connection error: ${err.message}`);
+        setConnectionStatus('error');
+        setError('WebSocket connection failed. Retrying...');
+      });
+
+      socket.on('marketData', (update) => {
+        addDebugLog(`📊 Received ${update.type} data: ${update.data?.length || update.fullData?.length || 0} records`);
+        
+        if (update.type === 'initial') {
+          addDebugLog(`✅ Setting initial data: ${update.data.length} records`);
+          setData(update.data);
+          setLoading(false);
+        } else if (update.type === 'update') {
+          addDebugLog(`🔄 Updating data: ${update.fullData.length} records`);
+          setData(update.fullData);
+          setUpdateCount(prev => prev + 1);
+          
+          addDebugLog(`📈 Changes: +${update.changes.updated.length} ~${update.changes.added.length} -${update.changes.removed.length}`);
+        }
+        
+        setLastUpdate(new Date(update.timestamp));
+        setError(null);
+      });
+
+      socket.on('error', (err) => {
+        addDebugLog(`❌ Server error: ${err.message}`);
+        setError(err.message);
+        setLoading(false);
+      });
+
+      // Ping-pong for connection health
+      const pingInterval = setInterval(() => {
+        if (socket.connected) {
+          socket.emit('ping');
+        }
+      }, 15000);
+
+      return () => {
+        clearInterval(pingInterval);
+        socket.disconnect();
+      };
+    };
+
+    const cleanup = initSocket();
+    
+    return () => {
+      if (cleanup) cleanup();
+    };
+  }, []);
+
+  // Handle tab/filter changes
   useEffect(() => {
-    if (!autoRefresh) return;
-    
-    const interval = setInterval(() => {
-      fetchData();
-    }, 30000);
-    
-    return () => clearInterval(interval);
-  }, [autoRefresh, activeTab, sort, priceFilter]);
+    if (socketRef.current && socketRef.current.connected) {
+      addDebugLog(`🔄 Resubscribing: ${activeTab}, sort: ${sort}, filter: ${priceFilter}`);
+      setLoading(true);
+      
+      // Unsubscribe from previous
+      socketRef.current.emit('unsubscribe');
+      
+      // Subscribe to new
+      socketRef.current.emit('subscribe', {
+        tab: activeTab,
+        sort,
+        priceFilter
+      });
+    }
+  }, [activeTab, sort, priceFilter]);
 
   const formatNumber = (num) => {
     if (!num) return '0';
@@ -92,6 +173,27 @@ const NSEDashboard = () => {
 
   const currentTab = tabs.find(t => t.id === activeTab);
 
+  const ConnectionIndicator = () => {
+    const statusConfig = {
+      connected: { color: 'text-green-600', icon: Wifi, text: 'Live' },
+      disconnected: { color: 'text-gray-400', icon: WifiOff, text: 'Offline' },
+      error: { color: 'text-red-600', icon: WifiOff, text: 'Error' }
+    };
+
+    const config = statusConfig[connectionStatus];
+    const Icon = config.icon;
+
+    return (
+      <div className={`flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 ${config.color}`}>
+        <Icon className="w-4 h-4" />
+        <span className="text-sm font-medium">{config.text}</span>
+        {connectionStatus === 'connected' && updateCount > 0 && (
+          <span className="text-xs text-gray-500">({updateCount})</span>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
       <div className="max-w-7xl mx-auto">
@@ -105,25 +207,20 @@ const NSEDashboard = () => {
                 {lastUpdate && (
                   <p className="text-sm text-gray-600 mt-1">
                     Last updated: {lastUpdate.toLocaleTimeString()}
-                    {responseInfo?.responseTime && ` (${responseInfo.responseTime})`}
                   </p>
                 )}
               </div>
             </div>
             <div className="flex items-center gap-4">
+              <ConnectionIndicator />
               <button
-                onClick={() => setAutoRefresh(!autoRefresh)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  autoRefresh
-                    ? 'bg-green-500 text-white hover:bg-green-600'
-                    : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
-                }`}
-              >
-                Auto-Refresh: {autoRefresh ? 'ON' : 'OFF'}
-              </button>
-              <button
-                onClick={fetchData}
-                disabled={loading}
+                onClick={() => {
+                  if (socketRef.current && socketRef.current.connected) {
+                    socketRef.current.emit('unsubscribe');
+                    socketRef.current.emit('subscribe', { tab: activeTab, sort, priceFilter });
+                  }
+                }}
+                disabled={loading || connectionStatus !== 'connected'}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -131,6 +228,18 @@ const NSEDashboard = () => {
               </button>
             </div>
           </div>
+
+          {/* Debug Console */}
+          <details className="mt-4">
+            <summary className="cursor-pointer text-sm text-gray-600 hover:text-gray-800">
+              🐛 Debug Console ({debugLogs.length} logs)
+            </summary>
+            <div className="mt-2 p-3 bg-gray-900 text-green-400 rounded font-mono text-xs max-h-40 overflow-y-auto">
+              {debugLogs.map((log, i) => (
+                <div key={i}>{log}</div>
+              ))}
+            </div>
+          </details>
         </div>
 
         {/* Tabs */}
@@ -154,7 +263,6 @@ const NSEDashboard = () => {
           {/* Filters */}
           <div className="p-4 border-b bg-gray-50">
             <div className="flex items-center gap-6">
-              {/* Sort By - Only for Main Board, SME, ETFs */}
               {currentTab?.hasSort && (
                 <div className="flex items-center gap-4">
                   <span className="text-sm font-medium text-gray-700">Sort By:</span>
@@ -183,7 +291,6 @@ const NSEDashboard = () => {
                 </div>
               )}
 
-              {/* Securities Filter - Only for Price Spurts */}
               {currentTab?.hasPriceFilter && (
                 <div className="flex items-center gap-4">
                   <span className="text-sm font-medium text-gray-700">Securities:</span>
@@ -201,7 +308,6 @@ const NSEDashboard = () => {
                 </div>
               )}
 
-              {/* Info Badge */}
               {data.length > 0 && (
                 <div className="ml-auto text-sm text-gray-600">
                   Showing <span className="font-semibold text-blue-600">{Math.min(data.length, 20)}</span> of <span className="font-semibold">{data.length}</span> records
@@ -227,7 +333,6 @@ const NSEDashboard = () => {
                   <th className="px-6 py-4 text-left text-sm font-semibold">#</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold">Symbol</th>
                   
-                  {/* Different columns for Volume Spurts */}
                   {activeTab === 'volume-spurts' ? (
                     <>
                       <th className="px-6 py-4 text-right text-sm font-semibold">Volume<br/>(Shares)</th>
@@ -267,21 +372,22 @@ const NSEDashboard = () => {
                   <tr>
                     <td colSpan="8" className="px-6 py-12 text-center text-gray-500">
                       <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2" />
-                      Loading market data...
+                      <p>Connecting to live data...</p>
+                      <p className="text-xs mt-2">Check debug console above for details</p>
                     </td>
                   </tr>
                 ) : data.length === 0 ? (
                   <tr>
                     <td colSpan="8" className="px-6 py-12 text-center text-gray-500">
-                      No data available
+                      <p>No data available</p>
+                      <p className="text-xs mt-2">Backend: {connectionStatus}</p>
                     </td>
                   </tr>
                 ) : (
                   data.slice(0, 20).map((item, index) => {
-                    // Volume Spurts
                     if (activeTab === 'volume-spurts') {
                       return (
-                        <tr key={item.symbol || index} className="border-b hover:bg-gray-50 transition-colors">
+                        <tr key={item.symbol || index} className="border-b hover:bg-blue-50 transition-colors">
                           <td className="px-6 py-4 text-sm text-gray-600">{index + 1}</td>
                           <td className="px-6 py-4 text-sm font-semibold text-blue-600">{item.symbol}</td>
                           <td className="px-6 py-4 text-sm text-right font-medium">{formatVolume(item.volume)}</td>
@@ -291,13 +397,12 @@ const NSEDashboard = () => {
                       );
                     }
 
-                    // Price Spurts
                     if (activeTab === 'price-spurts') {
                       const percentChange = parseFloat(item.pChange || 0);
                       const isPositive = percentChange >= 0;
 
                       return (
-                        <tr key={item.symbol || index} className="border-b hover:bg-gray-50 transition-colors">
+                        <tr key={item.symbol || index} className="border-b hover:bg-blue-50 transition-colors">
                           <td className="px-6 py-4 text-sm text-gray-600">{index + 1}</td>
                           <td className="px-6 py-4 text-sm font-semibold text-blue-600">{item.symbol}</td>
                           <td className="px-6 py-4 text-sm text-center text-gray-700">{item.series || 'EQ'}</td>
@@ -311,13 +416,12 @@ const NSEDashboard = () => {
                       );
                     }
 
-                    // ETFs
                     if (activeTab === 'etf') {
                       const percentChange = parseFloat(item.pChange || 0);
                       const isPositive = percentChange >= 0;
 
                       return (
-                        <tr key={item.symbol || index} className="border-b hover:bg-gray-50 transition-colors">
+                        <tr key={item.symbol || index} className="border-b hover:bg-blue-50 transition-colors">
                           <td className="px-6 py-4 text-sm text-gray-600">{index + 1}</td>
                           <td className="px-6 py-4 text-sm font-semibold text-blue-600">{item.symbol}</td>
                           <td className="px-6 py-4 text-sm text-right font-medium">₹{parseFloat(item.ltp || 0).toFixed(2)}</td>
@@ -331,13 +435,12 @@ const NSEDashboard = () => {
                       );
                     }
 
-                    // Main Board & SME
                     const priceChange = parseFloat(item.change || 0);
                     const percentChange = parseFloat(item.pChange || 0);
                     const isPositive = priceChange >= 0;
 
                     return (
-                      <tr key={item.symbol || index} className="border-b hover:bg-gray-50 transition-colors">
+                      <tr key={item.symbol || index} className="border-b hover:bg-blue-50 transition-colors">
                         <td className="px-6 py-4 text-sm text-gray-600">{index + 1}</td>
                         <td className="px-6 py-4 text-sm font-semibold text-blue-600">{item.symbol}</td>
                         <td className="px-6 py-4 text-sm text-gray-800">{item.companyName || item.symbol}</td>
