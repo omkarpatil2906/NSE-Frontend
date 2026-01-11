@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { RefreshCw, TrendingUp, TrendingDown, Activity, ChevronDown, Wifi, WifiOff } from 'lucide-react';
 
-// Socket.io client - import from CDN if npm package not available
 let io;
 if (typeof window !== 'undefined') {
   if (window.io) {
     io = window.io;
   } else {
-    // Fallback: load from CDN
     const script = document.createElement('script');
     script.src = 'https://cdn.socket.io/4.6.1/socket.io.min.js';
     script.async = true;
@@ -24,9 +22,6 @@ const NSEDashboard = () => {
   const [updateCount, setUpdateCount] = useState(0);
   const [debugLogs, setDebugLogs] = useState([]);
   
-  console.log("datatatat", data);
-  
-  // Filters
   const [activeTab, setActiveTab] = useState('main-board');
   const [sort, setSort] = useState('value');
   const [priceFilter, setPriceFilter] = useState('above20');
@@ -48,11 +43,9 @@ const NSEDashboard = () => {
     setDebugLogs(prev => [...prev.slice(-10), `[${timestamp}] ${message}`]);
   };
 
-  // Initialize WebSocket connection
   useEffect(() => {
     addDebugLog('🔌 Starting WebSocket initialization...');
     
-    // Wait for socket.io to be available
     const initSocket = () => {
       if (!window.io) {
         addDebugLog('⏳ Waiting for socket.io library...');
@@ -76,7 +69,6 @@ const NSEDashboard = () => {
         setConnectionStatus('connected');
         setError(null);
         
-        // Subscribe to current tab/filter
         addDebugLog(`📡 Subscribing to: ${activeTab}`);
         socket.emit('subscribe', {
           tab: activeTab,
@@ -121,7 +113,6 @@ const NSEDashboard = () => {
         setLoading(false);
       });
 
-      // Ping-pong for connection health
       const pingInterval = setInterval(() => {
         if (socket.connected) {
           socket.emit('ping');
@@ -141,21 +132,17 @@ const NSEDashboard = () => {
     };
   }, []);
 
-  // Handle tab/filter changes
   useEffect(() => {
     if (socketRef.current && socketRef.current.connected) {
       addDebugLog(`🔄 Tab/Filter changed: ${activeTab}, sort: ${sort}, filter: ${priceFilter}`);
       setLoading(true);
-      setData([]); // Clear old data immediately
+      setData([]);
       
-      // Unsubscribe from previous
       addDebugLog('   📤 Unsubscribing from previous...');
       socketRef.current.emit('unsubscribe');
       
-      // Small delay to ensure unsubscribe processes
       setTimeout(() => {
         addDebugLog(`   📤 Subscribing to new: ${activeTab}`);
-        // Subscribe to new
         socketRef.current.emit('subscribe', {
           tab: activeTab,
           sort,
@@ -166,16 +153,12 @@ const NSEDashboard = () => {
   }, [activeTab, sort, priceFilter]);
 
   const formatNumber = (num) => {
-    if (!num) return '0';
-    if (num >= 10000000) return `₹${(num / 10000000).toFixed(2)}Cr`;
-    if (num >= 100000) return `₹${(num / 100000).toFixed(2)}L`;
-    return num.toLocaleString('en-IN');
+    if (!num) return '0.00';
+    return num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   const formatVolume = (vol) => {
     if (!vol) return '0';
-    if (vol >= 10000000) return `${(vol / 10000000).toFixed(2)}Cr`;
-    if (vol >= 100000) return `${(vol / 100000).toFixed(2)}L`;
     return vol.toLocaleString('en-IN');
   };
 
@@ -203,9 +186,8 @@ const NSEDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
@@ -237,7 +219,6 @@ const NSEDashboard = () => {
             </div>
           </div>
 
-          {/* Debug Console */}
           <details className="mt-4">
             <summary className="cursor-pointer text-sm text-gray-600 hover:text-gray-800">
               🐛 Debug Console ({debugLogs.length} logs)
@@ -250,7 +231,6 @@ const NSEDashboard = () => {
           </details>
         </div>
 
-        {/* Tabs */}
         <div className="bg-white rounded-lg shadow-lg mb-6">
           <div className="flex border-b overflow-x-auto">
             {tabs.map((tab) => (
@@ -268,7 +248,6 @@ const NSEDashboard = () => {
             ))}
           </div>
 
-          {/* Filters */}
           <div className="p-4 border-b bg-gray-50">
             <div className="flex items-center gap-6">
               {currentTab?.hasSort && (
@@ -325,52 +304,57 @@ const NSEDashboard = () => {
           </div>
         </div>
 
-        {/* Error Display */}
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6">
             <strong>Error:</strong> {error}
           </div>
         )}
 
-        {/* Data Table */}
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-linear-to-r from-blue-600 to-indigo-600 text-white">
+              <thead className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
                 <tr>
                   <th className="px-6 py-4 text-left text-sm font-semibold">#</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold">Symbol</th>
                   
                   {activeTab === 'volume-spurts' ? (
                     <>
-                      <th className="px-6 py-4 text-right text-sm font-semibold">Volume<br/>(Shares)</th>
-                      <th className="px-6 py-4 text-right text-sm font-semibold">1 Wk Avg<br/>Volume</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">Volume</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">1 WK AVG.<br/>VOLUME</th>
                       <th className="px-6 py-4 text-right text-sm font-semibold">No. of<br/>Times</th>
                     </>
                   ) : activeTab === 'price-spurts' ? (
                     <>
                       <th className="px-6 py-4 text-center text-sm font-semibold">Series</th>
                       <th className="px-6 py-4 text-right text-sm font-semibold">LTP</th>
-                      <th className="px-6 py-4 text-right text-sm font-semibold">% Change</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">%CHNG</th>
                       <th className="px-6 py-4 text-right text-sm font-semibold">Volume<br/>(Shares)</th>
                       <th className="px-6 py-4 text-right text-sm font-semibold">Value<br/>(₹ Lakhs)</th>
                     </>
                   ) : activeTab === 'etf' ? (
                     <>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">Open</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">High</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">Low</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">Prev. Close</th>
                       <th className="px-6 py-4 text-right text-sm font-semibold">LTP</th>
                       <th className="px-6 py-4 text-right text-sm font-semibold">NAV</th>
-                      <th className="px-6 py-4 text-right text-sm font-semibold">% Change</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">%CHNG</th>
                       <th className="px-6 py-4 text-right text-sm font-semibold">Volume<br/>(Shares)</th>
                       <th className="px-6 py-4 text-right text-sm font-semibold">Value<br/>(₹ Lakhs)</th>
                     </>
                   ) : (
                     <>
-                      <th className="px-6 py-4 text-left text-sm font-semibold">Company</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">Open</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">High</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">Low</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">Prev. Close</th>
                       <th className="px-6 py-4 text-right text-sm font-semibold">LTP</th>
-                      <th className="px-6 py-4 text-right text-sm font-semibold">Change</th>
-                      <th className="px-6 py-4 text-right text-sm font-semibold">% Change</th>
-                      <th className="px-6 py-4 text-right text-sm font-semibold">Volume</th>
-                      <th className="px-6 py-4 text-right text-sm font-semibold">Turnover</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">%CHNG</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">Volume<br/>(Shares)</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">Value<br/>(₹ Lakhs)</th>
+                      {activeTab === 'main-board' && <th className="px-6 py-4 text-left text-sm font-semibold">CA</th>}
                     </>
                   )}
                 </tr>
@@ -378,7 +362,7 @@ const NSEDashboard = () => {
               <tbody>
                 {loading && data.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan="12" className="px-6 py-12 text-center text-gray-500">
                       <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2" />
                       <p>Connecting to live data...</p>
                       <p className="text-xs mt-2">Check debug console above for details</p>
@@ -386,7 +370,7 @@ const NSEDashboard = () => {
                   </tr>
                 ) : data.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan="12" className="px-6 py-12 text-center text-gray-500">
                       <p>No data available</p>
                       <p className="text-xs mt-2">Backend: {connectionStatus}</p>
                     </td>
@@ -399,71 +383,71 @@ const NSEDashboard = () => {
                           <td className="px-6 py-4 text-sm text-gray-600">{index + 1}</td>
                           <td className="px-6 py-4 text-sm font-semibold text-blue-600">{item.symbol}</td>
                           <td className="px-6 py-4 text-sm text-right font-medium">{formatVolume(item.volume)}</td>
-                          <td className="px-6 py-4 text-sm text-right text-gray-700">{formatVolume(item.oneWeekAvgVolume)}</td>
+                          <td className="px-6 py-4 text-sm text-right text-gray-700">{formatVolume(item.weekAvgVolume)}</td>
                           <td className="px-6 py-4 text-sm text-right font-medium text-gray-800">{item.noOfTimes}</td>
                         </tr>
                       );
                     }
 
                     if (activeTab === 'price-spurts') {
-                      const percentChange = parseFloat(item.pChange || 0);
-                      const isPositive = percentChange >= 0;
+                      const isPositive = item.pChange >= 0;
 
                       return (
                         <tr key={item.symbol || index} className="border-b hover:bg-blue-50 transition-colors">
                           <td className="px-6 py-4 text-sm text-gray-600">{index + 1}</td>
                           <td className="px-6 py-4 text-sm font-semibold text-blue-600">{item.symbol}</td>
                           <td className="px-6 py-4 text-sm text-center text-gray-700">{item.series || 'EQ'}</td>
-                          <td className="px-6 py-4 text-sm text-right font-medium">₹{parseFloat(item.ltp || 0).toFixed(2)}</td>
+                          <td className="px-6 py-4 text-sm text-right font-medium">{formatNumber(item.ltp)}</td>
                           <td className={`px-6 py-4 text-sm text-right font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                            {isPositive ? '+' : ''}{percentChange.toFixed(2)}%
+                            {isPositive ? '+' : ''}{formatNumber(item.pChange)}
                           </td>
-                          <td className="px-6 py-4 text-sm text-right text-gray-700">{formatVolume(item.totalTradedVolume)}</td>
-                          <td className="px-6 py-4 text-sm text-right font-medium text-gray-800">{formatNumber(item.turnover)}</td>
+                          <td className="px-6 py-4 text-sm text-right text-gray-700">{formatVolume(item.volume)}</td>
+                          <td className="px-6 py-4 text-sm text-right font-medium text-gray-800">{formatNumber(item.value)}</td>
                         </tr>
                       );
                     }
 
                     if (activeTab === 'etf') {
-                      const percentChange = parseFloat(item.pChange || 0);
-                      const isPositive = percentChange >= 0;
+                      const isPositive = item.pChange >= 0;
 
                       return (
                         <tr key={item.symbol || index} className="border-b hover:bg-blue-50 transition-colors">
                           <td className="px-6 py-4 text-sm text-gray-600">{index + 1}</td>
                           <td className="px-6 py-4 text-sm font-semibold text-blue-600">{item.symbol}</td>
-                          <td className="px-6 py-4 text-sm text-right font-medium">₹{parseFloat(item.ltp || 0).toFixed(2)}</td>
-                          <td className="px-6 py-4 text-sm text-right text-gray-700">₹{parseFloat(item.nav || 0).toFixed(2)}</td>
+                          <td className="px-6 py-4 text-sm text-right font-medium">{formatNumber(item.open)}</td>
+                          <td className="px-6 py-4 text-sm text-right font-medium">{formatNumber(item.high)}</td>
+                          <td className="px-6 py-4 text-sm text-right font-medium">{formatNumber(item.low)}</td>
+                          <td className="px-6 py-4 text-sm text-right font-medium">{formatNumber(item.prevClose)}</td>
+                          <td className="px-6 py-4 text-sm text-right font-medium">{formatNumber(item.ltp)}</td>
+                          <td className="px-6 py-4 text-sm text-right text-gray-700">{formatNumber(item.nav)}</td>
                           <td className={`px-6 py-4 text-sm text-right font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                            {isPositive ? '+' : ''}{percentChange.toFixed(2)}%
+                            {isPositive ? '+' : ''}{formatNumber(item.pChange)}
                           </td>
-                          <td className="px-6 py-4 text-sm text-right text-gray-700">{formatVolume(item.totalTradedVolume)}</td>
-                          <td className="px-6 py-4 text-sm text-right font-medium text-gray-800">{formatNumber(item.turnover)}</td>
+                          <td className="px-6 py-4 text-sm text-right text-gray-700">{formatVolume(item.volume)}</td>
+                          <td className="px-6 py-4 text-sm text-right font-medium text-gray-800">{formatNumber(item.value)}</td>
                         </tr>
                       );
                     }
 
-                    const priceChange = parseFloat(item.change || 0);
-                    const percentChange = parseFloat(item.pChange || 0);
-                    const isPositive = priceChange >= 0;
+                    const isPositive = item.pChange >= 0;
 
                     return (
                       <tr key={item.symbol || index} className="border-b hover:bg-blue-50 transition-colors">
                         <td className="px-6 py-4 text-sm text-gray-600">{index + 1}</td>
                         <td className="px-6 py-4 text-sm font-semibold text-blue-600">{item.symbol}</td>
-                        <td className="px-6 py-4 text-sm text-gray-800">{item.companyName || item.symbol}</td>
-                        <td className="px-6 py-4 text-sm text-right font-medium">₹{parseFloat(item.ltp || 0).toFixed(2)}</td>
+                        <td className="px-6 py-4 text-sm text-right font-medium">{formatNumber(item.open)}</td>
+                        <td className="px-6 py-4 text-sm text-right font-medium">{formatNumber(item.high)}</td>
+                        <td className="px-6 py-4 text-sm text-right font-medium">{formatNumber(item.low)}</td>
+                        <td className="px-6 py-4 text-sm text-right font-medium">{formatNumber(item.prevClose)}</td>
+                        <td className="px-6 py-4 text-sm text-right font-medium">{formatNumber(item.ltp)}</td>
                         <td className={`px-6 py-4 text-sm text-right font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                          <div className="flex items-center justify-end gap-1">
-                            {isPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                            {isPositive ? '+' : ''}{priceChange.toFixed(2)}
-                          </div>
+                          {isPositive ? '+' : ''}{formatNumber(item.pChange)}
                         </td>
-                        <td className={`px-6 py-4 text-sm text-right font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                          {isPositive ? '+' : ''}{percentChange.toFixed(2)}%
-                        </td>
-                        <td className="px-6 py-4 text-sm text-right text-gray-700">{formatVolume(item.totalTradedVolume)}</td>
-                        <td className="px-6 py-4 text-sm text-right font-medium text-gray-800">{formatNumber(item.turnover)}</td>
+                        <td className="px-6 py-4 text-sm text-right text-gray-700">{formatVolume(item.volume)}</td>
+                        <td className="px-6 py-4 text-sm text-right font-medium text-gray-800">{formatNumber(item.value)}</td>
+                        {activeTab === 'main-board' && (
+                          <td className="px-6 py-4 text-sm text-gray-700">{item.ca}</td>
+                        )}
                       </tr>
                     );
                   })
