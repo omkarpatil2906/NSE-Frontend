@@ -24,6 +24,8 @@ const NSEDashboard = () => {
   const [updateCount, setUpdateCount] = useState(0);
   const [debugLogs, setDebugLogs] = useState([]);
   
+  console.log("datatatat", data);
+  
   // Filters
   const [activeTab, setActiveTab] = useState('main-board');
   const [sort, setSort] = useState('value');
