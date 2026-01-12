@@ -193,16 +193,16 @@ const NSEDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100">
+    <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100">
       <div className="h-screen flex flex-col p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-violet-600 rounded-xl shadow-lg shadow-blue-500/20">
+            <div className="p-3 bg-linear-to-br from-blue-500 to-violet-600 rounded-xl shadow-lg shadow-blue-500/20">
               <BarChart3 className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold bg-linear-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">
                 Most Active Equities
               </h1>
               {lastUpdate && (
@@ -224,7 +224,7 @@ const NSEDashboard = () => {
                 }
               }}
               disabled={loading || connectionStatus !== 'connected'}
-              className="group flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-violet-600 text-white rounded-lg hover:from-blue-500 hover:to-violet-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105 active:scale-95"
+              className="group flex items-center gap-2 px-5 py-2.5 bg-linear-to-r from-blue-600 to-violet-600 text-white rounded-lg hover:from-blue-500 hover:to-violet-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105 active:scale-95"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
               <span className="font-semibold">Refresh</span>
@@ -239,7 +239,7 @@ const NSEDashboard = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`relative px-6 py-4 font-semibold whitespace-nowrap transition-all duration-300 ${
+                className={`relative px-6 py-4 cursor-pointer font-semibold whitespace-nowrap transition-all duration-300 ${
                   activeTab === tab.id
                     ? 'text-blue-400'
                     : 'text-slate-400 hover:text-slate-200'
@@ -248,8 +248,8 @@ const NSEDashboard = () => {
                 <span className="relative z-10">{tab.label}</span>
                 {activeTab === tab.id && (
                   <>
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-violet-500/10 animate-pulse"></div>
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 to-violet-500 shadow-lg shadow-blue-500/50"></div>
+                    <div className="absolute inset-0 bg-linear-to-r from-blue-500/10 to-violet-500/10 animate-pulse"></div>
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-linear-to-r from-blue-500 to-violet-500 shadow-lg shadow-blue-500/50"></div>
                   </>
                 )}
               </button>
@@ -266,14 +266,14 @@ const NSEDashboard = () => {
                       <button
                         key={option}
                         onClick={() => setSort(option)}
-                        className={`relative px-5 py-2 rounded-md text-sm font-semibold transition-all duration-300 ${
+                        className={`relative px-5 py-2 cursor-pointer rounded-md text-sm font-semibold transition-all duration-300 ${
                           sort === option
                             ? 'text-white'
                             : 'text-slate-400 hover:text-slate-200'
                         }`}
                       >
                         {sort === option && (
-                          <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-violet-600 rounded-md shadow-lg shadow-blue-500/30"></div>
+                          <div className="absolute inset-0 bg-linear-to-r from-blue-600 to-violet-600 rounded-md shadow-lg shadow-blue-500/30"></div>
                         )}
                         <span className="relative z-10 capitalize">{option}</span>
                       </button>
@@ -318,7 +318,7 @@ const NSEDashboard = () => {
         <div className="flex-1 bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl overflow-hidden flex flex-col">
           <div className="flex-1 overflow-auto">
             <table className="w-full">
-              <thead className="bg-gradient-to-r from-slate-800 to-slate-900 sticky top-0 z-10 shadow-lg">
+              <thead className="bg-linear-to-r from-slate-800 to-slate-900 sticky top-0 z-10 shadow-lg">
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-300 border-b border-slate-700/50">#</th>
                   <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-300 border-b border-slate-700/50">Symbol</th>
