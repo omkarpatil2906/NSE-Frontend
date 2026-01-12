@@ -145,9 +145,9 @@ const NSEDashboard2 = () => {
           )}
         </div>
         <span className="text-sm font-semibold">{config.text}</span>
-        {connectionStatus === 'connected' && updateCount > 0 && (
+        {/* {connectionStatus === 'connected' && updateCount > 0 && (
           <span className="ml-1 px-2 py-0.5 text-xs bg-emerald-500/30 rounded-full">{updateCount}</span>
-        )}
+        )} */}
       </div>
     );
   };
@@ -461,7 +461,7 @@ const NSEDashboard2 = () => {
               </button>
             </div>
             
-            <button
+            {/* <button
               onClick={() => {
                 if (socketRef.current && socketRef.current.connected) {
                   socketRef.current.emit('unsubscribe');
@@ -473,7 +473,7 @@ const NSEDashboard2 = () => {
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
               <span className="font-semibold">Refresh</span>
-            </button>
+            </button> */}
           </div>
         </div>
 
