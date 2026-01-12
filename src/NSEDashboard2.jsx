@@ -433,12 +433,12 @@ const NSEDashboard2 = () => {
             <div className="flex gap-2 p-1 bg-slate-800/50 rounded-lg border border-slate-700/50">
               <button
                 onClick={() => setViewMode('table')}
-                className={`relative px-4 py-2 rounded-md transition-all duration-300 ${
+                className={`relative px-4 py-2 rounded-md cursor-pointer transition-all duration-300 ${
                   viewMode === 'table' ? 'text-white' : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
                 {viewMode === 'table' && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-violet-600 rounded-md shadow-lg shadow-blue-500/30"></div>
+                  <div className="absolute inset-0 bg-linear-to-r from-blue-600 to-violet-600 rounded-md shadow-lg shadow-blue-500/30"></div>
                 )}
                 <div className="relative z-10 flex items-center gap-2">
                   <Table2 className="w-4 h-4" />
@@ -452,7 +452,7 @@ const NSEDashboard2 = () => {
                 }`}
               >
                 {viewMode === 'grid' && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-violet-600 rounded-md shadow-lg shadow-blue-500/30"></div>
+                  <div className="absolute inset-0 bg-linear-to-r from-blue-600 to-violet-600 rounded-md shadow-lg shadow-blue-500/30"></div>
                 )}
                 <div className="relative z-10 flex items-center gap-2">
                   <Grid3x3 className="w-4 h-4" />
@@ -491,8 +491,8 @@ const NSEDashboard2 = () => {
                 <span className="relative z-10">{tab.label}</span>
                 {activeTab === tab.id && (
                   <>
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-violet-500/10 animate-pulse"></div>
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 to-violet-500 shadow-lg shadow-blue-500/50"></div>
+                    <div className="absolute inset-0 bg-linear-to-r from-blue-500/10 to-violet-500/10 animate-pulse"></div>
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-linear-to-r from-blue-500 to-violet-500 shadow-lg shadow-blue-500/50"></div>
                   </>
                 )}
               </button>
@@ -514,7 +514,7 @@ const NSEDashboard2 = () => {
                         }`}
                       >
                         {sort === option && (
-                          <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-violet-600 rounded-md shadow-lg shadow-blue-500/30"></div>
+                          <div className="absolute inset-0 bg-linear-to-r from-blue-600 to-violet-600 rounded-md shadow-lg shadow-blue-500/30"></div>
                         )}
                         <span className="relative z-10 capitalize">{option}</span>
                       </button>
@@ -581,7 +581,7 @@ const NSEDashboard2 = () => {
           ) : (
             <div className="flex-1 overflow-auto custom-scrollbar">
               <table className="w-full">
-                <thead className="bg-gradient-to-r from-slate-800 to-slate-900 sticky top-0 z-10 shadow-lg">
+                <thead className="bg-linear-to-r from-slate-800 to-slate-900 sticky top-0 z-10 shadow-lg">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-300 border-b border-slate-700/50">#</th>
                     <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-300 border-b border-slate-700/50">Symbol</th>
