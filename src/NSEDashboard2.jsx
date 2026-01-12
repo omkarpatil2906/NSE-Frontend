@@ -540,11 +540,11 @@ const NSEDashboard2 = () => {
                 </div>
               )}
 
-              {data.length > 0 && (
+              {/* {data.length > 0 && (
                 <div className="ml-auto text-sm text-slate-400 bg-slate-800/30 px-4 py-2 rounded-lg border border-slate-700/30">
                   Showing <span className="font-bold text-blue-400">{Math.min(data.length, 20)}</span> of <span className="font-semibold text-slate-300">{data.length}</span> records
                 </div>
-              )}
+              )} */}
             </div>
           </div>
         </div>
