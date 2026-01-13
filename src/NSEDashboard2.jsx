@@ -157,9 +157,9 @@ const NSEDashboard2 = () => {
     
     if (activeTab === 'volume-spurts') {
       return (
-        <div className="group relative bg-gradient-to-br from-slate-800/50 via-slate-800/30 to-slate-900/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 hover:border-blue-500/50 transition-all duration-500 hover:shadow-2xl hover:shadow-blue-500/20 hover:scale-[1.02] overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 via-violet-500/0 to-blue-500/0 opacity-0 group-hover:opacity-10 transition-opacity duration-500"></div>
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-violet-500/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+        <div className="group relative bg-linear-to-br from-slate-800/50 via-slate-800/30 to-slate-900/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 hover:border-blue-500/50 transition-all duration-500 hover:shadow-2xl hover:shadow-blue-500/20 hover:scale-[1.02] overflow-hidden">
+          <div className="absolute inset-0 bg-linear-to-br from-blue-500/0 via-violet-500/0 to-blue-500/0 opacity-0 group-hover:opacity-10 transition-opacity duration-500"></div>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-linear-to-br from-blue-500/10 to-violet-500/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
           
           <div className="relative p-6">
             <div className="flex items-start justify-between mb-4">
@@ -202,9 +202,9 @@ const NSEDashboard2 = () => {
 
     if (activeTab === 'price-spurts') {
       return (
-        <div className="group relative bg-gradient-to-br from-slate-800/50 via-slate-800/30 to-slate-900/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 hover:border-blue-500/50 transition-all duration-500 hover:shadow-2xl hover:shadow-blue-500/20 hover:scale-[1.02] overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 via-violet-500/0 to-blue-500/0 opacity-0 group-hover:opacity-10 transition-opacity duration-500"></div>
-          <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${isPositive ? 'from-emerald-500/10 to-green-500/10' : 'from-red-500/10 to-rose-500/10'} rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700`}></div>
+        <div className="group relative bg-linear-to-br from-slate-800/50 via-slate-800/30 to-slate-900/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 hover:border-blue-500/50 transition-all duration-500 hover:shadow-2xl hover:shadow-blue-500/20 hover:scale-[1.02] overflow-hidden">
+          <div className="absolute inset-0 bg-linear-to-br from-blue-500/0 via-violet-500/0 to-blue-500/0 opacity-0 group-hover:opacity-10 transition-opacity duration-500"></div>
+          <div className={`absolute top-0 right-0 w-32 h-32 bg-linear-to-br ${isPositive ? 'from-emerald-500/10 to-green-500/10' : 'from-red-500/10 to-rose-500/10'} rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700`}></div>
           
           <div className="relative p-6">
             <div className="flex items-start justify-between mb-4">
@@ -247,8 +247,8 @@ const NSEDashboard2 = () => {
 
     if (activeTab === 'etf') {
       return (
-        <div className="group relative bg-gradient-to-br from-slate-800/50 via-slate-800/30 to-slate-900/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 hover:border-blue-500/50 transition-all duration-500 hover:shadow-2xl hover:shadow-blue-500/20 hover:scale-[1.02] overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 via-violet-500/0 to-blue-500/0 opacity-0 group-hover:opacity-10 transition-opacity duration-500"></div>
+        <div className="group relative bg-linear-to-br from-slate-800/50 via-slate-800/30 to-slate-900/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 hover:border-blue-500/50 transition-all duration-500 hover:shadow-2xl hover:shadow-blue-500/20 hover:scale-[1.02] overflow-hidden">
+          <div className="absolute inset-0 bg-linear-to-br from-blue-500/0 via-violet-500/0 to-blue-500/0 opacity-0 group-hover:opacity-10 transition-opacity duration-500"></div>
           
           <div className="relative p-6">
             <div className="flex items-start justify-between mb-4">
@@ -310,9 +310,9 @@ const NSEDashboard2 = () => {
     }
 
     return (
-      <div className="group relative bg-gradient-to-br from-slate-800/50 via-slate-800/30 to-slate-900/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 hover:border-blue-500/50 transition-all duration-500 hover:shadow-2xl hover:shadow-blue-500/20 hover:scale-[1.02] overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 via-violet-500/0 to-blue-500/0 opacity-0 group-hover:opacity-10 transition-opacity duration-500"></div>
-        <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${isPositive ? 'from-emerald-500/10 to-green-500/10' : 'from-red-500/10 to-rose-500/10'} rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700`}></div>
+      <div className="group relative bg-linear-to-br from-slate-800/50 via-slate-800/30 to-slate-900/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 hover:border-blue-500/50 transition-all duration-500 hover:shadow-2xl hover:shadow-blue-500/20 hover:scale-[1.02] overflow-hidden">
+        <div className="absolute inset-0 bg-linear-to-br from-blue-500/0 via-violet-500/0 to-blue-500/0 opacity-0 group-hover:opacity-10 transition-opacity duration-500"></div>
+        <div className={`absolute top-0 right-0 w-32 h-32 bg-linear-to-br ${isPositive ? 'from-emerald-500/10 to-green-500/10' : 'from-red-500/10 to-rose-500/10'} rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700`}></div>
         
         <div className="relative p-6">
           <div className="flex items-start justify-between mb-4">
@@ -376,7 +376,7 @@ const NSEDashboard2 = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100">
+    <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100">
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 10px;
@@ -410,11 +410,11 @@ const NSEDashboard2 = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-violet-600 rounded-xl shadow-lg shadow-blue-500/20">
+            <div className="p-3 bg-linear-to-br from-blue-500 to-violet-600 rounded-xl shadow-lg shadow-blue-500/20">
               <BarChart3 className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold bg-linear-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">
                 Most Active Equities
               </h1>
               {lastUpdate && (
