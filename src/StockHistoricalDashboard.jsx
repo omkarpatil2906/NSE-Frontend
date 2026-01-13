@@ -9,7 +9,7 @@ const StockHistoricalDashboard = () => {
   const [error, setError] = useState(null);
   
   const [stockData, setStockData] = useState(null);
-  const [activeView, setActiveView] = useState('overview'); // overview, historical, corporate, financial
+  const [activeView, setActiveView] = useState('overview');
 
   const API_BASE = 'http://localhost:5000';
 
@@ -109,7 +109,7 @@ const StockHistoricalDashboard = () => {
     return (
       <div className="space-y-6">
         {/* Main Price Card */}
-        <div className="bg-gradient-to-br from-slate-800/50 via-slate-800/30 to-slate-900/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-2xl">
+        <div className="bg-linear-to-br from-slate-800/50 via-slate-800/30 to-slate-900/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-2xl">
           <div className="flex items-start justify-between mb-6">
             <div className="flex-1">
               <h2 className="text-3xl font-bold text-white mb-2">{quote?.companyName || selectedSymbol}</h2>
@@ -174,7 +174,7 @@ const StockHistoricalDashboard = () => {
 
         {/* 52 Week Range & Volume */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
+          <div className="bg-linear-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-violet-500/10 rounded-lg">
                 <TrendingUp className="w-5 h-5 text-violet-400" />
@@ -188,7 +188,7 @@ const StockHistoricalDashboard = () => {
               </div>
               <div className="h-2 bg-slate-700/30 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-red-500 via-yellow-500 to-emerald-500"
+                  className="h-full bg-linear-to-r from-red-500 via-yellow-500 to-emerald-500"
                   style={{ 
                     width: `${((quote?.currentPrice - quote?.week52Low) / (quote?.week52High - quote?.week52Low)) * 100}%` 
                   }}
@@ -201,7 +201,7 @@ const StockHistoricalDashboard = () => {
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
+          <div className="bg-linear-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-blue-500/10 rounded-lg">
                 <Activity className="w-5 h-5 text-blue-400" />
@@ -231,7 +231,7 @@ const StockHistoricalDashboard = () => {
         </div>
 
         {/* Stats Summary */}
-        <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
+        <div className="bg-linear-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2 bg-amber-500/10 rounded-lg">
               <BarChart3 className="w-5 h-5 text-amber-400" />
@@ -266,7 +266,7 @@ const StockHistoricalDashboard = () => {
     const sortedData = [...historical].sort((a, b) => new Date(b.date) - new Date(a.date));
 
     return (
-      <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 overflow-hidden">
+      <div className="bg-linear-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 overflow-hidden">
         <div className="p-6 border-b border-slate-700/50">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-500/10 rounded-lg">
@@ -279,7 +279,7 @@ const StockHistoricalDashboard = () => {
           </div>
         </div>
         
-        <div className="overflow-auto max-h-[600px] custom-scrollbar">
+        <div className="overflow-auto max-h-150 custom-scrollbar">
           <table className="w-full">
             <thead className="bg-slate-800 sticky top-0 z-10">
               <tr>
@@ -330,7 +330,7 @@ const StockHistoricalDashboard = () => {
     const actions = stockData?.corporateActions || [];
 
     return (
-      <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 overflow-hidden">
+      <div className="bg-linear-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 overflow-hidden">
         <div className="p-6 border-b border-slate-700/50">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-emerald-500/10 rounded-lg">
@@ -349,7 +349,7 @@ const StockHistoricalDashboard = () => {
             <p className="text-slate-400">No corporate actions found for this stock</p>
           </div>
         ) : (
-          <div className="p-6 space-y-4 max-h-[600px] overflow-auto custom-scrollbar">
+          <div className="p-6 space-y-4 max-h-150 overflow-auto custom-scrollbar">
             {actions.map((action, index) => (
               <div key={index} className="bg-slate-900/50 rounded-xl p-5 border border-slate-700/30 hover:border-emerald-500/30 transition-colors">
                 <div className="flex items-start justify-between mb-3">
@@ -402,7 +402,7 @@ const StockHistoricalDashboard = () => {
     const results = stockData?.financialResults || [];
 
     return (
-      <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 overflow-hidden">
+      <div className="bg-linear-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 overflow-hidden">
         <div className="p-6 border-b border-slate-700/50">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-violet-500/10 rounded-lg">
@@ -421,7 +421,7 @@ const StockHistoricalDashboard = () => {
             <p className="text-slate-400">No financial results found for this stock</p>
           </div>
         ) : (
-          <div className="p-6 space-y-4 max-h-[600px] overflow-auto custom-scrollbar">
+          <div className="p-6 space-y-4 max-h-150 overflow-auto custom-scrollbar">
             {results.map((result, index) => (
               <div key={index} className="bg-slate-900/50 rounded-xl p-5 border border-slate-700/30 hover:border-violet-500/30 transition-colors">
                 <div className="flex items-start justify-between mb-4">
@@ -470,7 +470,7 @@ const StockHistoricalDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 p-6">
+    <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 p-6">
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 8px;
@@ -492,11 +492,11 @@ const StockHistoricalDashboard = () => {
       {/* Header */}
       <div className="max-w-7xl mx-auto mb-8">
         <div className="flex items-center gap-4 mb-6">
-          <div className="p-3 bg-gradient-to-br from-blue-500 to-violet-600 rounded-xl shadow-lg shadow-blue-500/20">
+          <div className="p-3 bg-linear-to-br from-blue-500 to-violet-600 rounded-xl shadow-lg shadow-blue-500/20">
             <BarChart3 className="w-7 h-7 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold bg-linear-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">
               Stock Historical Analysis
             </h1>
             <p className="text-sm text-slate-400 mt-1">Complete stock data with historical prices, corporate actions, and financial results</p>
@@ -520,7 +520,7 @@ const StockHistoricalDashboard = () => {
               <button
                 type="submit"
                 disabled={loading || !searchSymbol.trim()}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-violet-600 text-white font-semibold rounded-xl hover:from-blue-500 hover:to-violet-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105 active:scale-95"
+                className="px-6 py-3 bg-linear-to-r from-blue-600 to-violet-600 text-white font-semibold rounded-xl hover:from-blue-500 hover:to-violet-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105 active:scale-95"
               >
                 {loading ? 'Loading...' : 'Search'}
               </button>
@@ -549,7 +549,7 @@ const StockHistoricalDashboard = () => {
         {/* Error Message */}
         {error && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
             <div>
               <p className="text-red-400 font-semibold">Error</p>
               <p className="text-sm text-red-300 mt-1">{error}</p>
@@ -573,7 +573,7 @@ const StockHistoricalDashboard = () => {
                   }`}
                 >
                   {period === p.value && (
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-violet-600 rounded-md shadow-lg"></div>
+                    <div className="absolute inset-0 bg-linear-to-r from-blue-600 to-violet-600 rounded-md shadow-lg"></div>
                   )}
                   <span className="relative z-10">{p.label}</span>
                 </button>
@@ -610,8 +610,8 @@ const StockHistoricalDashboard = () => {
                     <span className="relative z-10">{view.label}</span>
                     {activeView === view.id && (
                       <>
-                        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-violet-500/10"></div>
-                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 to-violet-500 shadow-lg"></div>
+                        <div className="absolute inset-0 bg-linear-to-r from-blue-500/10 to-violet-500/10"></div>
+                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-linear-to-r from-blue-500 to-violet-500 shadow-lg"></div>
                       </>
                     )}
                   </button>
@@ -634,7 +634,7 @@ const StockHistoricalDashboard = () => {
       {!selectedSymbol && !error && (
         <div className="max-w-4xl mx-auto">
           <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-16 text-center">
-            <div className="p-4 bg-gradient-to-br from-blue-500/10 to-violet-500/10 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
+            <div className="p-4 bg-linear-to-br from-blue-500/10 to-violet-500/10 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
               <Search className="w-10 h-10 text-blue-400" />
             </div>
             <h3 className="text-2xl font-bold text-white mb-3">Search for a Stock</h3>

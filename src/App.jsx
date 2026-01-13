@@ -7,6 +7,7 @@ function App() {
     <div>
       {/* <NSEDashboard/> */}
       <NSEDashboard2/>
+      
     </div>
   )
 }
