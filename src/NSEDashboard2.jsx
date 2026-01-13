@@ -447,7 +447,7 @@ const NSEDashboard2 = () => {
               </button>
               <button
                 onClick={() => setViewMode('grid')}
-                className={`relative px-4 py-2 rounded-md transition-all duration-300 ${
+                className={`relative px-4 py-2 cursor-pointer rounded-md transition-all duration-300 ${
                   viewMode === 'grid' ? 'text-white' : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
