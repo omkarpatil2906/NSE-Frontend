@@ -1,18 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { RefreshCw, TrendingUp, TrendingDown, Activity, ChevronDown, Wifi, WifiOff, BarChart3, Grid3x3, Table2, Sparkles, ArrowUpRight, ArrowDownRight } from 'lucide-react';
-import { MainBoardData } from '../services/MostActvityEquitySevices';
+import { ETFSData, MainBoardData, PriceSpurts, SMEData, VolumeSpurts } from '../services/MostActvityEquitySevices';
+import socketService from '../services/SocketService';
 
-let io;
-if (typeof window !== 'undefined') {
-  if (window.io) {
-    io = window.io;
-  } else {
-    const script = document.createElement('script');
-    script.src = 'https://cdn.socket.io/4.6.1/socket.io.min.js';
-    script.async = true;
-    document.head.appendChild(script);
-  }
-}
 
 const MostActiveEquity = () => {
   const [data, setData] = useState([]);
@@ -20,15 +10,12 @@ const MostActiveEquity = () => {
   const [error, setError] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
-  const [updateCount, setUpdateCount] = useState(0);
   const [viewMode, setViewMode] = useState('table');
 
   const [activeTab, setActiveTab] = useState('main-board');
   const [sort, setSort] = useState('value');
   const [priceFilter, setPriceFilter] = useState('above20');
 
-  const socketRef = useRef(null);
-  const API_BASE = 'http://localhost:5000';
 
   const tabs = [
     { id: 'main-board', label: 'Main Board', hasSort: true },
@@ -38,89 +25,121 @@ const MostActiveEquity = () => {
     { id: 'volume-spurts', label: 'Volume Spurts', hasSort: false }
   ];
 
-  useEffect(() => {
-    let val = "Value"
-    MainBoardData(val)
-      .then((res) => {
-        console.log(res ,"main board data");
-      })
-      .catch(err => err)
-  }, [])
 
-  useEffect(() => {
-    const initSocket = () => {
-      if (!window.io) {
-        setTimeout(initSocket, 100);
-        return;
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      let response;
+
+      switch (activeTab) {
+        case 'main-board':
+          response = await MainBoardData(sort);
+          setData(response.data.results || []);
+          break;
+
+        case 'sme':
+          response = await SMEData(sort);
+          setData(response.data.results || []);
+          break;
+
+        case 'etf':
+          response = await ETFSData(sort);
+          setData(response.data.results || []);
+          break;
+
+        case 'price-spurts':
+          response = await PriceSpurts(priceFilter === 'above20' ? 'ALL' : 'BELOW20');
+          setData(response.data.results || []);
+          break;
+
+        case 'volume-spurts':
+          response = await VolumeSpurts();
+          setData(response.data.results || []);
+          break;
+
+        default:
+          break;
       }
 
-      const socket = window.io(API_BASE, {
-        transports: ['websocket', 'polling'],
-        reconnection: true,
-        reconnectionDelay: 1000,
-        reconnectionAttempts: 5
-      });
+      setLastUpdate(new Date());
+      setLoading(false);
+    } catch (err) {
+      console.error('API fetch error:', err);
+      setError(err.message || 'Failed to fetch data');
+      setLoading(false);
+    }
+  };
 
-      socketRef.current = socket;
-
-      socket.on('connect', () => {
-        setConnectionStatus('connected');
-        setError(null);
-        socket.emit('subscribe', { tab: activeTab, sort, priceFilter });
-      });
-
-      socket.on('disconnect', () => {
-        setConnectionStatus('disconnected');
-      });
-
-      socket.on('connect_error', (err) => {
-        setConnectionStatus('error');
-        setError('WebSocket connection failed. Retrying...');
-      });
-
-      socket.on('marketData', (update) => {
-        if (update.type === 'initial') {
-          setData(update.data);
-          setLoading(false);
-        } else if (update.type === 'update') {
-          setData(update.fullData);
-          setUpdateCount(prev => prev + 1);
-        }
-        setLastUpdate(new Date(update.timestamp));
-        setError(null);
-      });
-
-      socket.on('error', (err) => {
-        setError(err.message);
-        setLoading(false);
-      });
-
-      const pingInterval = setInterval(() => {
-        if (socket.connected) {
-          socket.emit('ping');
-        }
-      }, 15000);
-
-      return () => {
-        clearInterval(pingInterval);
-        socket.disconnect();
-      };
-    };
-
-    const cleanup = initSocket();
-    return () => { if (cleanup) cleanup(); };
-  }, []);
 
   useEffect(() => {
-    if (socketRef.current && socketRef.current.connected) {
-      setLoading(true);
-      setData([]);
-      socketRef.current.emit('unsubscribe');
+    console.log('🚀 Initializing socket connection...');
+    socketService.connect();
+
+    // Listen to connection status
+    socketService.on('connectionStatus', (status) => {
+      console.log('Connection status:', status);
+      setConnectionStatus(status);
+      if (status === 'connected') {
+        setError(null);
+      }
+    });
+
+    socketService.on('marketData', (update) => {
+      console.log('📊 Market data update:', update.type);
+
+      if (update.type === 'initial') {
+        setData(update.data || []);
+        setLoading(false);
+      } else if (update.type === 'update') {
+        setData(update.fullData || []);
+      }
+
+      setLastUpdate(new Date(update.timestamp));
+      setError(null);
+    });
+
+    // Listen to socket errors
+    socketService.on('error', (errorMsg) => {
+      console.error('Socket error:', errorMsg);
+      setError(errorMsg);
+      setLoading(false);
+    });
+
+    // Setup ping interval to keep connection alive
+    const pingInterval = setInterval(() => {
+      if (socketService.isConnected()) {
+        socketService.ping();
+      }
+    }, 15000);
+
+    // Cleanup on unmount
+    return () => {
+      clearInterval(pingInterval);
+      socketService.disconnect();
+    };
+  }, []);
+
+  // Fetch data via HTTP API when tab/sort/filter changes
+  useEffect(() => {
+    console.log('📡 Tab/Sort/Filter changed, fetching data...');
+    fetchData();
+  }, [activeTab, sort, priceFilter]);
+
+  // Subscribe to socket updates when tab/sort/filter changes
+  useEffect(() => {
+    if (socketService.isConnected()) {
+      console.log('🔄 Updating socket subscription...');
+      socketService.unsubscribe();
+
+      // Small delay to ensure unsubscribe completes
       setTimeout(() => {
-        socketRef.current.emit('subscribe', { tab: activeTab, sort, priceFilter });
+        socketService.subscribe({ tab: activeTab, sort, priceFilter });
       }, 100);
     }
   }, [activeTab, sort, priceFilter]);
+
+
 
   const formatNumber = (num) => {
     if (!num) return '0.00';
