@@ -1,13 +1,10 @@
 import React from 'react'
-import NSEDashboard from './NSEDashboard'
-import NSEDashboard2 from './NSEDashboard2'
+import MostActiveEquity from './mostActiveEquity/component/MostActiveEquity'
 
 function App() {
   return (
     <div>
-      {/* <NSEDashboard/> */}
-      <NSEDashboard2/>
-      
+      <MostActiveEquity/>
     </div>
   )
 }
