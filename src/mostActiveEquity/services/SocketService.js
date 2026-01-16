@@ -1,67 +1,102 @@
-// services/socketService.js
+// services/SocketService.js
 import { io } from 'socket.io-client';
 
 class SocketService {
   constructor() {
-    this.socket = null;
+    this.sockets = new Map(); // Store multiple namespace connections
     this.API_BASE = 'http://localhost:5000';
     this.listeners = new Map();
+    this.currentNamespace = null;
   }
 
   /**
-   * Initialize socket connection
+   * Get namespace path from tab ID
    */
-  connect() {
-    if (this.socket?.connected) {
-      console.log('Socket already connected');
-      return this.socket;
+  getNamespace(tab) {
+    const namespaceMap = {
+      'main-board': '/mainboard',
+      'sme': '/sme',
+      'etf': '/etf',
+      'price-spurts': '/price-spurts',
+      'volume-spurts': '/volume-spurts'
+    };
+    return namespaceMap[tab] || '/mainboard';
+  }
+
+  /**
+   * Connect to a specific namespace
+   */
+  connect(tab) {
+    const namespace = this.getNamespace(tab);
+    
+    // If already connected to this namespace, return existing socket
+    if (this.sockets.has(namespace)) {
+      const existingSocket = this.sockets.get(namespace);
+      if (existingSocket.connected) {
+        console.log(`✅ Already connected to ${namespace}`);
+        this.currentNamespace = namespace;
+        return existingSocket;
+      } else {
+        // Socket exists but disconnected, remove it
+        console.log(`🗑️ Removing disconnected socket for ${namespace}`);
+        existingSocket.removeAllListeners();
+        existingSocket.disconnect();
+        this.sockets.delete(namespace);
+      }
     }
 
-    this.socket = io(this.API_BASE, {
+    // Disconnect from other namespaces first
+    this.disconnectAll();
+
+    console.log(`🔌 Connecting to namespace: ${namespace}`);
+
+    const socket = io(`${this.API_BASE}${namespace}`, {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: 1000,
-      reconnectionAttempts: 5
+      reconnectionAttempts: 5,
+      timeout: 10000
     });
 
-    this.setupDefaultListeners();
-    return this.socket;
+    this.setupSocketListeners(socket, namespace);
+    this.sockets.set(namespace, socket);
+    this.currentNamespace = namespace;
+
+    return socket;
   }
 
   /**
-   * Setup default event listeners
+   * Setup socket event listeners
    */
-  setupDefaultListeners() {
-    if (!this.socket) return;
-
-    this.socket.on('connect', () => {
-      console.log('✅ Socket connected:', this.socket.id);
+  setupSocketListeners(socket, namespace) {
+    socket.on('connect', () => {
+      console.log(`✅ Connected to ${namespace}:`, socket.id);
       this.emit('connectionStatus', 'connected');
     });
 
-    this.socket.on('disconnect', () => {
-      console.log('❌ Socket disconnected');
+    socket.on('disconnect', (reason) => {
+      console.log(`❌ Disconnected from ${namespace}. Reason:`, reason);
       this.emit('connectionStatus', 'disconnected');
     });
 
-    this.socket.on('connect_error', (error) => {
-      console.error('⚠️ Socket connection error:', error);
+    socket.on('connect_error', (error) => {
+      console.error(`⚠️ Connection error on ${namespace}:`, error.message);
       this.emit('connectionStatus', 'error');
-      this.emit('error', 'WebSocket connection failed. Retrying...');
+      this.emit('error', `WebSocket connection failed: ${error.message}`);
     });
 
-    this.socket.on('marketData', (data) => {
-      console.log('📊 Market data received:', data.type);
+    socket.on('marketData', (data) => {
+      console.log(`📊 Market data received from ${namespace}:`, data.type, `(${data.data?.length || 0} items)`);
       this.emit('marketData', data);
     });
 
-    this.socket.on('error', (error) => {
-      console.error('❌ Socket error:', error);
-      this.emit('error', error.message);
+    socket.on('error', (error) => {
+      console.error(`❌ Socket error on ${namespace}:`, error);
+      this.emit('error', error.message || 'Socket error occurred');
     });
 
-    this.socket.on('pong', () => {
-      console.log('🏓 Pong received');
+    socket.on('pong', () => {
+      console.log(`🏓 Pong received from ${namespace}`);
     });
   }
 
@@ -71,40 +106,69 @@ class SocketService {
   subscribe(params) {
     const { tab, sort = 'value', priceFilter = 'above20' } = params;
     
-    if (!this.socket?.connected) {
-      console.error('Socket not connected. Connecting first...');
-      this.connect();
-      
-      // Wait for connection then subscribe
-      setTimeout(() => {
-        this.socket?.emit('subscribe', { tab, sort, priceFilter });
-      }, 1000);
-      return;
-    }
+    console.log(`📡 Subscribe called for tab: ${tab}`, { sort, priceFilter });
+    
+    // Connect to the correct namespace
+    const socket = this.connect(tab);
+    
+    // Always use the connect event to ensure subscription happens after connection
+    const doSubscribe = () => {
+      console.log(`✅ Socket connected, now subscribing to ${tab}`);
+      this.doSubscribe(tab, sort, priceFilter, socket);
+    };
 
-    console.log('📡 Subscribing to:', { tab, sort, priceFilter });
-    this.socket.emit('subscribe', { tab, sort, priceFilter });
+    if (socket.connected) {
+      // Already connected, subscribe immediately
+      console.log(`Socket already connected to ${this.currentNamespace}`);
+      doSubscribe();
+    } else {
+      // Wait for connection
+      console.log(`⏳ Waiting for socket to connect to ${this.currentNamespace}...`);
+      socket.once('connect', doSubscribe);
+    }
   }
 
   /**
-   * Unsubscribe from current market data
+   * Perform the actual subscription
+   */
+  doSubscribe(tab, sort, priceFilter, socket) {
+    console.log(`📤 Emitting subscribe event to ${tab}:`, { sort, priceFilter });
+
+    // Send subscription based on tab type
+    if (tab === 'main-board' || tab === 'sme' || tab === 'etf') {
+      console.log(`   Sending: subscribe({ sort: '${sort}' })`);
+      socket.emit('subscribe', { sort });
+    } else if (tab === 'price-spurts') {
+      console.log(`   Sending: subscribe({ priceFilter: '${priceFilter}' })`);
+      socket.emit('subscribe', { priceFilter });
+    } else if (tab === 'volume-spurts') {
+      console.log(`   Sending: subscribe()`);
+      socket.emit('subscribe');
+    }
+  }
+
+  /**
+   * Unsubscribe from current namespace
    */
   unsubscribe() {
-    if (!this.socket?.connected) {
-      console.warn('Socket not connected');
-      return;
+    if (this.currentNamespace) {
+      const socket = this.sockets.get(this.currentNamespace);
+      if (socket && socket.connected) {
+        console.log(`🔌 Unsubscribing from ${this.currentNamespace}`);
+        socket.emit('unsubscribe');
+      }
     }
-
-    console.log('🔌 Unsubscribing from market data');
-    this.socket.emit('unsubscribe');
   }
 
   /**
    * Send ping to keep connection alive
    */
   ping() {
-    if (this.socket?.connected) {
-      this.socket.emit('ping');
+    if (this.currentNamespace) {
+      const socket = this.sockets.get(this.currentNamespace);
+      if (socket && socket.connected) {
+        socket.emit('ping');
+      }
     }
   }
 
@@ -137,7 +201,8 @@ class SocketService {
   emit(event, data) {
     if (!this.listeners.has(event)) return;
     
-    this.listeners.get(event).forEach(callback => {
+    const listeners = this.listeners.get(event);
+    listeners.forEach(callback => {
       try {
         callback(data);
       } catch (error) {
@@ -147,29 +212,51 @@ class SocketService {
   }
 
   /**
-   * Disconnect socket
+   * Disconnect from all namespaces
+   */
+  disconnectAll() {
+    this.sockets.forEach((socket, namespace) => {
+      if (socket) {
+        console.log(`🔌 Disconnecting from ${namespace}`);
+        socket.removeAllListeners();
+        socket.disconnect();
+      }
+    });
+    this.sockets.clear();
+    this.currentNamespace = null;
+  }
+
+  /**
+   * Disconnect from current namespace only
    */
   disconnect() {
-    if (this.socket) {
-      console.log('🔌 Disconnecting socket');
-      this.socket.disconnect();
-      this.socket = null;
+    if (this.currentNamespace) {
+      const socket = this.sockets.get(this.currentNamespace);
+      if (socket) {
+        console.log(`🔌 Disconnecting from ${this.currentNamespace}`);
+        socket.removeAllListeners();
+        socket.disconnect();
+        this.sockets.delete(this.currentNamespace);
+      }
     }
     this.listeners.clear();
+    this.currentNamespace = null;
   }
 
   /**
-   * Check if socket is connected
+   * Check if connected to current namespace
    */
   isConnected() {
-    return this.socket?.connected || false;
+    if (!this.currentNamespace) return false;
+    const socket = this.sockets.get(this.currentNamespace);
+    return socket ? socket.connected : false;
   }
 
   /**
-   * Get socket instance
+   * Get current socket instance
    */
   getSocket() {
-    return this.socket;
+    return this.currentNamespace ? this.sockets.get(this.currentNamespace) : null;
   }
 }
 
