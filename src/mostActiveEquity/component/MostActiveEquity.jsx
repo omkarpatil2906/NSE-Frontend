@@ -72,21 +72,21 @@ const MostActiveEquity = () => {
   };
 
 
-  useEffect(() => {
-    console.log('🚀 Initializing socket connection...');
-    socketService.connect();
-
-    // Listen to connection status
-    socketService.on('connectionStatus', (status) => {
-      console.log('Connection status:', status);
+useEffect(() => {
+    console.log('🚀 Component mounted - Setting up socket listeners...');
+    
+    // Connection status listener
+    const handleConnectionStatus = (status) => {
+      console.log('📡 Connection status changed:', status);
       setConnectionStatus(status);
       if (status === 'connected') {
         setError(null);
       }
-    });
+    };
 
-    socketService.on('marketData', (update) => {
-      console.log('📊 Market data update:', update.type);
+    // Market data listener
+    const handleMarketData = (update) => {
+      console.log('📊 Market data received:', update.type, 'Records:', update.data?.length || update.fullData?.length);
 
       if (update.type === 'initial') {
         setData(update.data || []);
@@ -97,16 +97,21 @@ const MostActiveEquity = () => {
 
       setLastUpdate(new Date(update.timestamp));
       setError(null);
-    });
+    };
 
-    // Listen to socket errors
-    socketService.on('error', (errorMsg) => {
-      console.error('Socket error:', errorMsg);
+    // Error listener
+    const handleError = (errorMsg) => {
+      console.error('❌ Socket error:', errorMsg);
       setError(errorMsg);
       setLoading(false);
-    });
+    };
 
-    // Setup ping interval to keep connection alive
+    // Register listeners
+    socketService.on('connectionStatus', handleConnectionStatus);
+    socketService.on('marketData', handleMarketData);
+    socketService.on('error', handleError);
+
+    // Setup ping interval
     const pingInterval = setInterval(() => {
       if (socketService.isConnected()) {
         socketService.ping();
@@ -115,31 +120,52 @@ const MostActiveEquity = () => {
 
     // Cleanup on unmount
     return () => {
+      console.log('🧹 Component unmounting - Cleaning up...');
       clearInterval(pingInterval);
-      socketService.disconnect();
+      socketService.off('connectionStatus', handleConnectionStatus);
+      socketService.off('marketData', handleMarketData);
+      socketService.off('error', handleError);
+      socketService.disconnectAll();
     };
-  }, []);
+  }, []); // Empty dependency - runs once on mount
 
-  // Fetch data via HTTP API when tab/sort/filter changes
+  // Handle tab/sort/filter changes - subscribe to new data stream
   useEffect(() => {
-    console.log('📡 Tab/Sort/Filter changed, fetching data...');
-    fetchData();
-  }, [activeTab, sort, priceFilter]);
-
-  // Subscribe to socket updates when tab/sort/filter changes
-  useEffect(() => {
-    if (socketService.isConnected()) {
-      console.log('🔄 Updating socket subscription...');
-      socketService.unsubscribe();
-
-      // Small delay to ensure unsubscribe completes
-      setTimeout(() => {
+    console.log('🔄 Subscription params changed:', { activeTab, sort, priceFilter });
+    
+    setLoading(true);
+    setData([]);
+    
+    // Unsubscribe from previous subscription
+    socketService.unsubscribe();
+    
+    // Connect to new namespace and subscribe
+    const connectAndSubscribe = () => {
+      const socket = socketService.connect(activeTab);
+      
+      if (socket && socket.connected) {
+        console.log('✅ Socket connected, subscribing...');
         socketService.subscribe({ tab: activeTab, sort, priceFilter });
-      }, 100);
-    }
+      } else {
+        console.log('⏳ Socket not ready, waiting for connection...');
+        // Wait for connection then subscribe
+        setTimeout(() => {
+          if (socketService.isConnected()) {
+            console.log('✅ Socket connected after wait, subscribing...');
+            socketService.subscribe({ tab: activeTab, sort, priceFilter });
+          } else {
+            console.error('❌ Socket connection timeout');
+            setError('Failed to connect to live data stream');
+            setLoading(false);
+          }
+        }, 1500);
+      }
+    };
+
+    // Small delay to ensure clean disconnect
+    setTimeout(connectAndSubscribe, 100);
+
   }, [activeTab, sort, priceFilter]);
-
-
 
   const formatNumber = (num) => {
     if (!num) return '0.00';
