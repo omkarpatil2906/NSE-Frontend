@@ -49,7 +49,7 @@ const MostActiveEquity = () => {
           break;
 
         case 'price-spurts':
-          response = await PriceSpurts(priceFilter === 'above20' ? 'ALL' : 'BELOW20');
+          response = await PriceSpurts(priceFilter);
           setData(response.data.results || []);
           break;
 

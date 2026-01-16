@@ -18,8 +18,8 @@ export const ETFSData = async (sort) => {
     })
 }
 
-export const PriceSpurts = async (symbol) => {
-    return await resortApi.get(`/pricespurts/symbol/${symbol}`, {
+export const PriceSpurts = async (priceFilter) => {
+    return await resortApi.get(`/price-spurts/${priceFilter}`, {
 
     })
 }
