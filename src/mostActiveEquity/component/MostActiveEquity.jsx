@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { RefreshCw, TrendingUp, TrendingDown, Activity, ChevronDown, Wifi, WifiOff, BarChart3, Grid3x3, Table2, Sparkles, ArrowUpRight, ArrowDownRight } from 'lucide-react';
-import { ETFSData, MainBoardData, PriceSpurts, SMEData, VolumeSpurts } from '../services/MostActvityEquitySevices';
 import socketService from '../services/SocketService';
 
 
@@ -24,52 +23,6 @@ const MostActiveEquity = () => {
     { id: 'price-spurts', label: 'Price Spurts', hasSort: false, hasPriceFilter: true },
     { id: 'volume-spurts', label: 'Volume Spurts', hasSort: false }
   ];
-
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      let response;
-
-      switch (activeTab) {
-        case 'main-board':
-          response = await MainBoardData(sort);
-          setData(response.data.results || []);
-          break;
-
-        case 'sme':
-          response = await SMEData(sort);
-          setData(response.data.results || []);
-          break;
-
-        case 'etf':
-          response = await ETFSData(sort);
-          setData(response.data.results || []);
-          break;
-
-        case 'price-spurts':
-          response = await PriceSpurts(priceFilter);
-          setData(response.data.results || []);
-          break;
-
-        case 'volume-spurts':
-          response = await VolumeSpurts();
-          setData(response.data.results || []);
-          break;
-
-        default:
-          break;
-      }
-
-      setLastUpdate(new Date());
-      setLoading(false);
-    } catch (err) {
-      console.error('API fetch error:', err);
-      setError(err.message || 'Failed to fetch data');
-      setLoading(false);
-    }
-  };
 
 
 useEffect(() => {
