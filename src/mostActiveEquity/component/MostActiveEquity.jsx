@@ -56,6 +56,7 @@ useEffect(() => {
     const handleError = (errorMsg) => {
       console.error('❌ Socket error:', errorMsg);
       setError(errorMsg);
+      setData([]);
       setLoading(false);
     };
 
