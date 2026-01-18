@@ -635,7 +635,7 @@ useEffect(() => {
                 <tbody className="divide-y divide-slate-700/30">
                   {loading && data.length === 0 ? (
                     <tr>
-                      <td colSpan="12" className="h-full w-fill text-center justify-center items-center ">
+                      <td colSpan="12" className="py-30 text-center justify-center items-center ">
                         <RefreshCw className="w-10 h-10 animate-spin mx-auto mb-3 text-blue-400" />
                         <p className="text-slate-300 font-semibold">Connecting to live data...</p>
                         <p className="text-xs text-slate-500 mt-2">Establishing real-time connection</p>
@@ -664,6 +664,7 @@ useEffect(() => {
 
                       if (activeTab === 'price-spurts') {
                         const isPositive = item.pChange >= 0;
+                       
                         return (
                           <tr key={item.symbol || index} className="hover:bg-slate-800/40 transition-all duration-200 group">
                             <td className="px-6 py-4 text-sm text-slate-500 group-hover:text-slate-400">{index + 1}</td>
