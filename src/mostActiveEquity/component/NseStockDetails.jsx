@@ -92,7 +92,7 @@ const NseStockDetails = ({ stockData, onBack }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 p-6">
+    <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 p-6">
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 8px;
@@ -121,7 +121,7 @@ const NseStockDetails = ({ stockData, onBack }) => {
               </button>
             )}
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold bg-linear-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">
                 {sampleData.name}
               </h1>
               <p className="text-sm text-slate-400 mt-1">{sampleData.identifier}</p>
@@ -196,7 +196,7 @@ const NseStockDetails = ({ stockData, onBack }) => {
                       }`}
                     >
                       {timeRange === range && (
-                        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-violet-600 rounded-md shadow-lg shadow-blue-500/30"></div>
+                        <div className="absolute inset-0 bg-linear-to-r from-blue-600 to-violet-600 rounded-md shadow-lg shadow-blue-500/30"></div>
                       )}
                       <span className="relative z-10">{range}</span>
                     </button>
@@ -212,7 +212,7 @@ const NseStockDetails = ({ stockData, onBack }) => {
                     }`}
                   >
                     {chartType === 'area' && (
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-violet-600 rounded-md shadow-lg shadow-blue-500/30"></div>
+                      <div className="absolute inset-0 bg-linear-to-r from-blue-600 to-violet-600 rounded-md shadow-lg shadow-blue-500/30"></div>
                     )}
                     <Activity className="w-4 h-4 relative z-10" />
                   </button>
@@ -223,7 +223,7 @@ const NseStockDetails = ({ stockData, onBack }) => {
                     }`}
                   >
                     {chartType === 'line' && (
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-violet-600 rounded-md shadow-lg shadow-blue-500/30"></div>
+                      <div className="absolute inset-0 bg-linear-to-r from-blue-600 to-violet-600 rounded-md shadow-lg shadow-blue-500/30"></div>
                     )}
                     <TrendingUp className="w-4 h-4 relative z-10" />
                   </button>
@@ -233,7 +233,7 @@ const NseStockDetails = ({ stockData, onBack }) => {
           </div>
 
           {/* Chart */}
-          <div className="p-6 bg-gradient-to-br from-slate-900/30 to-slate-800/20">
+          <div className="p-6 bg-linear-to-br from-slate-900/30 to-slate-800/20">
             <ResponsiveContainer width="100%" height={450}>
               {chartType === 'area' ? (
                 <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
