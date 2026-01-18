@@ -563,9 +563,9 @@ useEffect(() => {
         {/* Content Area */}
         <div className="flex-1 bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl overflow-hidden flex flex-col">
           {viewMode === 'grid' ? (
-            <div className="flex-1 overflow-auto custom-scrollbar p-6">
+            <div className="flex-1 overflow-auto custom-scrollbar p-12">
               {loading && data.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full">
+                <div className="flex flex-col items-center justify-center h-ful">
                   <RefreshCw className="w-12 h-12 animate-spin text-blue-400 mb-4" />
                   <p className="text-slate-300 font-semibold text-lg">Connecting to live data...</p>
                   <p className="text-xs text-slate-500 mt-2">Establishing real-time connection</p>
@@ -635,7 +635,7 @@ useEffect(() => {
                 <tbody className="divide-y divide-slate-700/30">
                   {loading && data.length === 0 ? (
                     <tr>
-                      <td colSpan="12" className="px-6 py-16 text-center">
+                      <td colSpan="12" className="h-full w-fill text-center justify-center items-center ">
                         <RefreshCw className="w-10 h-10 animate-spin mx-auto mb-3 text-blue-400" />
                         <p className="text-slate-300 font-semibold">Connecting to live data...</p>
                         <p className="text-xs text-slate-500 mt-2">Establishing real-time connection</p>
