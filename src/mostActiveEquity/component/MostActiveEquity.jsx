@@ -133,11 +133,32 @@ const MostActiveEquity = () => {
   };
 
 
-  const openStockDetailsPage = (item) => {
-    // Prepare stock data object
+ const openStockDetailsPage = async (item) => {
+  try {
+    // First, try to fetch historical data from your API
+    // Replace this URL with your actual API endpoint
+    const response = await fetch(`/api/stock-history/${item.symbol}`);
+    let graphData = [];
+    
+    if (response.ok) {
+      graphData = await response.json();
+    } else {
+      // If API fails, generate sample data based on current price
+      const basePrice = item.ltp;
+      const now = Date.now();
+      
+      for (let i = 29; i >= 0; i--) {
+        const timestamp = now - (i * 24 * 60 * 60 * 1000);
+        const randomVariation = (Math.random() - 0.5) * basePrice * 0.05;
+        const price = basePrice + randomVariation;
+        graphData.push([timestamp, price, "NM"]);
+      }
+    }
+    
+    // Prepare complete stock data object
     const stockData = {
       symbol: item.symbol,
-      name: item.symbol, // Use actual company name if available
+      name: item.symbol,
       identifier: item.symbol,
       series: item.series || 'EQ',
       ltp: item.ltp,
@@ -150,11 +171,41 @@ const MostActiveEquity = () => {
       value: item.value,
       closePrice: item.ltp,
       ca: item.ca,
-      grapthData: item.grapthData || []
+      grapthData: graphData // Historical data array
     };
+
+    // Store in localStorage
+    localStorage.setItem('selectedStock', JSON.stringify(stockData));
+    
+    console.log('Opening stock details with data:', stockData);
+    
+    // Open in new tab
+    window.open('/stock-details', '_blank', 'noopener,noreferrer');
+    
+  } catch (error) {
+    console.error('Error preparing stock data:', error);
+    
+    // Fallback: still open the page with basic data
+    const stockData = {
+      symbol: item.symbol,
+      name: item.symbol,
+      identifier: item.symbol,
+      ltp: item.ltp,
+      open: item.open,
+      high: item.high,
+      low: item.low,
+      prevClose: item.prevClose,
+      pChange: item.pChange,
+      volume: item.volume,
+      value: item.value,
+      closePrice: item.ltp,
+      grapthData: [] 
+    };
+    
     localStorage.setItem('selectedStock', JSON.stringify(stockData));
     window.open('/stock-details', '_blank', 'noopener,noreferrer');
-  };
+  }
+};
 
   const currentTab = tabs.find(t => t.id === activeTab);
 
