@@ -11,7 +11,6 @@ const MostActiveEquity = () => {
   const [lastUpdate, setLastUpdate] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
   const [viewMode, setViewMode] = useState('table');
-  const [selectedStock, setSelectedStock] = useState(null);
 
   const [activeTab, setActiveTab] = useState('main-board');
   const [sort, setSort] = useState('value');
@@ -133,6 +132,30 @@ const MostActiveEquity = () => {
     return vol.toLocaleString('en-IN');
   };
 
+
+  const openStockDetailsPage = (item) => {
+    // Prepare stock data object
+    const stockData = {
+      symbol: item.symbol,
+      name: item.symbol, // Use actual company name if available
+      identifier: item.symbol,
+      series: item.series || 'EQ',
+      ltp: item.ltp,
+      open: item.open,
+      high: item.high,
+      low: item.low,
+      prevClose: item.prevClose,
+      pChange: item.pChange,
+      volume: item.volume,
+      value: item.value,
+      closePrice: item.ltp,
+      ca: item.ca,
+      grapthData: item.grapthData || []
+    };
+    localStorage.setItem('selectedStock', JSON.stringify(stockData));
+    window.open('/stock-details', '_blank', 'noopener,noreferrer');
+  };
+
   const currentTab = tabs.find(t => t.id === activeTab);
 
   const ConnectionIndicator = () => {
@@ -182,7 +205,7 @@ const MostActiveEquity = () => {
                 </div>
                 <h3
                   className="text-xl font-bold text-blue-400 group-hover:text-blue-300 transition-colors"
-                  onClick={() => setSelectedStock(item)}>
+                  onClick={() => openStockDetailsPage(item)}>
                   {item.symbol}
                 </h3>
               </div>
@@ -230,7 +253,7 @@ const MostActiveEquity = () => {
                   <span className="text-xs text-slate-500 font-semibold">{item.series || 'EQ'}</span>
                 </div>
                 <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300 transition-colors"
-                  onClick={() => setSelectedStock(item)}>
+                  onClick={() => openStockDetailsPage(item)}>
                   {item.symbol}
                 </h3>
               </div>
@@ -273,7 +296,7 @@ const MostActiveEquity = () => {
               <div className="flex-1">
                 <div className="text-xs font-bold text-slate-500 mb-1">#{index + 1}</div>
                 <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300 transition-colors"
-                  onClick={() => setSelectedStock(item)}>
+                  onClick={() => openStockDetailsPage(item)}>
                   {item.symbol}
                 </h3>
               </div>
@@ -348,7 +371,7 @@ const MostActiveEquity = () => {
                 )}
               </div>
               <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300 transition-colors"
-                onClick={() => setSelectedStock(item)} >
+                onClick={() => openStockDetailsPage(item)} >
                 {item.symbol}
               </h3>
             </div>
@@ -669,7 +692,7 @@ const MostActiveEquity = () => {
                         return (
                           <tr key={item.symbol || index} className="hover:bg-slate-800/40 transition-all duration-200 group">
                             <td className="px-6 py-4 text-sm text-slate-500 group-hover:text-slate-400">{index + 1}</td>
-                            <td className="px-6 py-4 text-sm font-bold text-blue-400 group-hover:text-blue-300" onClick={() => setSelectedStock(item)} >{item.symbol}</td>
+                            <td className="px-6 py-4 text-sm font-bold text-blue-400 group-hover:text-blue-300" onClick={() => openStockDetailsPage(item)} >{item.symbol}</td>
                             <td className="px-6 py-4 text-sm text-right font-semibold text-slate-200">{formatVolume(item.volume)}</td>
                             <td className="px-6 py-4 text-sm text-right text-slate-400">{formatVolume(item.weekAvgVolume)}</td>
                             <td className="px-6 py-4 text-sm text-right font-semibold text-slate-200">{item.noOfTimes}</td>
@@ -683,7 +706,7 @@ const MostActiveEquity = () => {
                         return (
                           <tr key={item.symbol || index} className="hover:bg-slate-800/40 transition-all duration-200 group">
                             <td className="px-6 py-4 text-sm text-slate-500 group-hover:text-slate-400">{index + 1}</td>
-                            <td className="px-6 py-4 text-sm font-bold text-blue-400 group-hover:text-blue-300" onClick={() => setSelectedStock(item)}>{item.symbol}</td>
+                            <td className="px-6 py-4 text-sm font-bold text-blue-400 group-hover:text-blue-300" onClick={() => openStockDetailsPage(item)}>{item.symbol}</td>
                             <td className="px-6 py-4 text-sm text-center text-slate-400">{item.series || 'EQ'}</td>
                             <td className="px-6 py-4 text-sm text-right font-semibold text-slate-200">{formatNumber(item.ltp)}</td>
                             <td className={`px-6 py-4 text-sm text-right font-bold ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
@@ -700,7 +723,7 @@ const MostActiveEquity = () => {
                         return (
                           <tr key={item.symbol || index} className="hover:bg-slate-800/40 transition-all duration-200 group">
                             <td className="px-6 py-4 text-sm text-slate-500 group-hover:text-slate-400">{index + 1}</td>
-                            <td className="px-6 py-4 text-sm font-bold text-blue-400 group-hover:text-blue-300" onClick={() => setSelectedStock(item)}>{item.symbol}</td>
+                            <td className="px-6 py-4 text-sm font-bold text-blue-400 group-hover:text-blue-300" onClick={() => openStockDetailsPage(item)}>{item.symbol}</td>
                             <td className="px-6 py-4 text-sm text-right font-semibold text-slate-200">{formatNumber(item.open)}</td>
                             <td className="px-6 py-4 text-sm text-right font-semibold text-slate-200">{formatNumber(item.high)}</td>
                             <td className="px-6 py-4 text-sm text-right font-semibold text-slate-200">{formatNumber(item.low)}</td>
@@ -720,7 +743,7 @@ const MostActiveEquity = () => {
                       return (
                         <tr key={item.symbol || index} className="hover:bg-slate-800/40 transition-all duration-200 group">
                           <td className="px-6 py-4 text-sm text-slate-500 group-hover:text-slate-400">{index + 1}</td>
-                          <td className="px-6 py-4 text-sm font-bold text-blue-400 group-hover:text-blue-300" onClick={() => setSelectedStock(item)}>{item.symbol}</td>
+                          <td className="px-6 py-4 text-sm font-bold text-blue-400 group-hover:text-blue-300" onClick={() => openStockDetailsPage(item)}>{item.symbol}</td>
                           <td className="px-6 py-4 text-sm text-right font-semibold text-slate-200">{formatNumber(item.open)}</td>
                           <td className="px-6 py-4 text-sm text-right font-semibold text-slate-200">{formatNumber(item.high)}</td>
                           <td className="px-6 py-4 text-sm text-right font-semibold text-slate-200">{formatNumber(item.low)}</td>
@@ -745,15 +768,6 @@ const MostActiveEquity = () => {
         </div>
       </div>
 
-      <div>
-        {selectedStock && (
-          <NseStockDetails
-            stockData={selectedStock}
-            onBack={() => setSelectedStock(null)}
-          />
-        )}
-
-      </div>
     </div>
   );
 };
