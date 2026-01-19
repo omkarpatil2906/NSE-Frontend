@@ -1,6 +1,7 @@
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import MostActiveEquity from './mostActiveEquity/component/MostActiveEquity'
+import NseStockDetails from './mostActiveEquity/component/NseStockDetails';
 
 function App() {
   return (
