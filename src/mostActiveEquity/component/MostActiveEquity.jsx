@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { RefreshCw, TrendingUp, TrendingDown, Activity, ChevronDown, Wifi, WifiOff, BarChart3, Grid3x3, Table2, Sparkles, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import socketService from '../services/SocketService';
+import NseStockDetails from './NseStockDetails';
 
 
 const MostActiveEquity = () => {
@@ -10,6 +11,7 @@ const MostActiveEquity = () => {
   const [lastUpdate, setLastUpdate] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
   const [viewMode, setViewMode] = useState('table');
+  const [selectedStock, setSelectedStock] = useState(null);
 
   const [activeTab, setActiveTab] = useState('main-board');
   const [sort, setSort] = useState('value');
@@ -25,9 +27,9 @@ const MostActiveEquity = () => {
   ];
 
 
-useEffect(() => {
+  useEffect(() => {
     console.log('🚀 Component mounted - Setting up socket listeners...');
-    
+
     // Connection status listener
     const handleConnectionStatus = (status) => {
       console.log('📡 Connection status changed:', status);
@@ -86,17 +88,17 @@ useEffect(() => {
   // Handle tab/sort/filter changes - subscribe to new data stream
   useEffect(() => {
     console.log('🔄 Subscription params changed:', { activeTab, sort, priceFilter });
-    
+
     setLoading(true);
     setData([]);
-    
+
     // Unsubscribe from previous subscription
     socketService.unsubscribe();
-    
+
     // Connect to new namespace and subscribe
     const connectAndSubscribe = () => {
       const socket = socketService.connect(activeTab);
-      
+
       if (socket && socket.connected) {
         console.log('✅ Socket connected, subscribing...');
         socketService.subscribe({ tab: activeTab, sort, priceFilter });
@@ -178,7 +180,11 @@ useEffect(() => {
                   <div className="h-1 w-1 rounded-full bg-slate-600"></div>
                   <Activity className="w-3 h-3 text-blue-400" />
                 </div>
-                <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300 transition-colors">{item.symbol}</h3>
+                <h3
+                  className="text-xl font-bold text-blue-400 group-hover:text-blue-300 transition-colors"
+                  onClick={() => setSelectedStock(item)}>
+                  {item.symbol}
+                </h3>
               </div>
               <div className="flex items-center gap-1 px-3 py-1 bg-blue-500/10 rounded-full border border-blue-500/20">
                 <TrendingUp className="w-3 h-3 text-blue-400" />
@@ -223,7 +229,10 @@ useEffect(() => {
                   <div className="h-1 w-1 rounded-full bg-slate-600"></div>
                   <span className="text-xs text-slate-500 font-semibold">{item.series || 'EQ'}</span>
                 </div>
-                <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300 transition-colors">{item.symbol}</h3>
+                <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300 transition-colors"
+                  onClick={() => setSelectedStock(item)}>
+                  {item.symbol}
+                </h3>
               </div>
               <div className={`flex items-center gap-1 px-3 py-1 rounded-full border ${isPositive ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
                 {isPositive ? <ArrowUpRight className="w-4 h-4 text-emerald-400" /> : <ArrowDownRight className="w-4 h-4 text-red-400" />}
@@ -263,7 +272,10 @@ useEffect(() => {
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
                 <div className="text-xs font-bold text-slate-500 mb-1">#{index + 1}</div>
-                <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300 transition-colors">{item.symbol}</h3>
+                <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300 transition-colors"
+                  onClick={() => setSelectedStock(item)}>
+                  {item.symbol}
+                </h3>
               </div>
               <div className={`flex items-center gap-1 px-3 py-1 rounded-full border ${isPositive ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
                 {isPositive ? <TrendingUp className="w-4 h-4 text-emerald-400" /> : <TrendingDown className="w-4 h-4 text-red-400" />}
@@ -335,7 +347,10 @@ useEffect(() => {
                   </>
                 )}
               </div>
-              <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300 transition-colors">{item.symbol}</h3>
+              <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300 transition-colors"
+                onClick={() => setSelectedStock(item)} >
+                {item.symbol}
+              </h3>
             </div>
             <div className={`flex items-center gap-1 px-3 py-1 rounded-full border ${isPositive ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
               {isPositive ? <ArrowUpRight className="w-4 h-4 text-emerald-400" /> : <ArrowDownRight className="w-4 h-4 text-red-400" />}
@@ -654,7 +669,7 @@ useEffect(() => {
                         return (
                           <tr key={item.symbol || index} className="hover:bg-slate-800/40 transition-all duration-200 group">
                             <td className="px-6 py-4 text-sm text-slate-500 group-hover:text-slate-400">{index + 1}</td>
-                            <td className="px-6 py-4 text-sm font-bold text-blue-400 group-hover:text-blue-300">{item.symbol}</td>
+                            <td className="px-6 py-4 text-sm font-bold text-blue-400 group-hover:text-blue-300" onClick={() => setSelectedStock(item)} >{item.symbol}</td>
                             <td className="px-6 py-4 text-sm text-right font-semibold text-slate-200">{formatVolume(item.volume)}</td>
                             <td className="px-6 py-4 text-sm text-right text-slate-400">{formatVolume(item.weekAvgVolume)}</td>
                             <td className="px-6 py-4 text-sm text-right font-semibold text-slate-200">{item.noOfTimes}</td>
@@ -664,11 +679,11 @@ useEffect(() => {
 
                       if (activeTab === 'price-spurts') {
                         const isPositive = item.pChange >= 0;
-                       
+
                         return (
                           <tr key={item.symbol || index} className="hover:bg-slate-800/40 transition-all duration-200 group">
                             <td className="px-6 py-4 text-sm text-slate-500 group-hover:text-slate-400">{index + 1}</td>
-                            <td className="px-6 py-4 text-sm font-bold text-blue-400 group-hover:text-blue-300">{item.symbol}</td>
+                            <td className="px-6 py-4 text-sm font-bold text-blue-400 group-hover:text-blue-300" onClick={() => setSelectedStock(item)}>{item.symbol}</td>
                             <td className="px-6 py-4 text-sm text-center text-slate-400">{item.series || 'EQ'}</td>
                             <td className="px-6 py-4 text-sm text-right font-semibold text-slate-200">{formatNumber(item.ltp)}</td>
                             <td className={`px-6 py-4 text-sm text-right font-bold ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
@@ -685,7 +700,7 @@ useEffect(() => {
                         return (
                           <tr key={item.symbol || index} className="hover:bg-slate-800/40 transition-all duration-200 group">
                             <td className="px-6 py-4 text-sm text-slate-500 group-hover:text-slate-400">{index + 1}</td>
-                            <td className="px-6 py-4 text-sm font-bold text-blue-400 group-hover:text-blue-300">{item.symbol}</td>
+                            <td className="px-6 py-4 text-sm font-bold text-blue-400 group-hover:text-blue-300" onClick={() => setSelectedStock(item)}>{item.symbol}</td>
                             <td className="px-6 py-4 text-sm text-right font-semibold text-slate-200">{formatNumber(item.open)}</td>
                             <td className="px-6 py-4 text-sm text-right font-semibold text-slate-200">{formatNumber(item.high)}</td>
                             <td className="px-6 py-4 text-sm text-right font-semibold text-slate-200">{formatNumber(item.low)}</td>
@@ -705,7 +720,7 @@ useEffect(() => {
                       return (
                         <tr key={item.symbol || index} className="hover:bg-slate-800/40 transition-all duration-200 group">
                           <td className="px-6 py-4 text-sm text-slate-500 group-hover:text-slate-400">{index + 1}</td>
-                          <td className="px-6 py-4 text-sm font-bold text-blue-400 group-hover:text-blue-300">{item.symbol}</td>
+                          <td className="px-6 py-4 text-sm font-bold text-blue-400 group-hover:text-blue-300" onClick={() => setSelectedStock(item)}>{item.symbol}</td>
                           <td className="px-6 py-4 text-sm text-right font-semibold text-slate-200">{formatNumber(item.open)}</td>
                           <td className="px-6 py-4 text-sm text-right font-semibold text-slate-200">{formatNumber(item.high)}</td>
                           <td className="px-6 py-4 text-sm text-right font-semibold text-slate-200">{formatNumber(item.low)}</td>
@@ -728,6 +743,16 @@ useEffect(() => {
             </div>
           )}
         </div>
+      </div>
+
+      <div>
+        {selectedStock && (
+          <NseStockDetails
+            stockData={selectedStock}
+            onBack={() => setSelectedStock(null)}
+          />
+        )}
+
       </div>
     </div>
   );
