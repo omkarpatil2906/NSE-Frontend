@@ -1,93 +1,61 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush } from 'recharts';
 import { TrendingUp, TrendingDown, Calendar, BarChart3, Activity, Home, Maximize2, ZoomIn, ZoomOut, Maximize } from 'lucide-react';
+import { StockChartData } from '../services/NseStockDetailsServices';
 
 const NseStockDetails = () => {
   const [stockData, setStockData] = useState(null);
-  const [timeRange, setTimeRange] = useState('1M');
+  const [timeRange, setTimeRange] = useState('1D');
   const [chartType, setChartType] = useState('area');
   const [loading, setLoading] = useState(true);
   const [zoomDomain, setZoomDomain] = useState(null);
   const [brushIndexes, setBrushIndexes] = useState({ startIndex: 0, endIndex: 100 });
   const chartContainerRef = useRef(null);
+  const checkIntervalRef = useRef(null);
 
-  // Load stock data from localStorage
+
+  console.log(new Date(1768906499000))
+
+  // Load stock data from localStorage with live updates
   useEffect(() => {
-    const storedData = localStorage.getItem('selectedStock');
-    
-    // Sample data for testing/fallback
-    const sampleData = {
-      identifier: "SILVERBEESEQN",
-      name: "SILVERBEES",
-      closePrice: 269.44,
-      symbol: "SILVERBEES",
-      ltp: 269.44,
-      open: 262.00,
-      high: 269.70,
-      low: 261.50,
-      prevClose: 263.99,
-      pChange: 2.06,
-      volume: 1250000,
-      value: 334.50,
-      grapthData: [
-        [1768521600000, 269.4, "NM"],
-        [1768348800000, 263.99, "NM"],
-        [1768262400000, 249.45, "NM"],
-        [1768176000000, 243.75, "NM"],
-        [1767916800000, 229.85, "NM"],
-        [1767830400000, 224.25, "NM"],
-        [1767744000000, 234.09, "NM"],
-        [1767657600000, 232.01, "NM"],
-        [1767571200000, 226.2, "NM"],
-        [1767312000000, 222.19, "NM"],
-        [1767225600000, 215, "NM"],
-        [1767139200000, 215.8, "NM"],
-        [1767052800000, 219, "NM"],
-        [1766966400000, 218, "NM"],
-        [1766707200000, 222, "NM"],
-        [1766534400000, 209.5, "NM"],
-        [1766448000000, 201.93, "NM"],
-        [1766361600000, 200.25, "NM"],
-        [1766102400000, 191.97, "NM"]
-      ]
-    };
-    
-    if (storedData) {
-      try {
-        const data = JSON.parse(storedData);
-        console.log('Loaded stock data:', data);
-        
-        // If no graph data, generate sample based on current price
-        if (!data.grapthData || data.grapthData.length === 0) {
-          const basePrice = data.ltp || data.closePrice || 100;
-          const now = Date.now();
-          const generatedData = [];
-          
-          // Generate 30 days of sample data
-          for (let i = 29; i >= 0; i--) {
-            const timestamp = now - (i * 24 * 60 * 60 * 1000);
-            const randomVariation = (Math.random() - 0.5) * basePrice * 0.05;
-            const price = basePrice + randomVariation;
-            generatedData.push([timestamp, price, "NM"]);
-          }
-          
-          data.grapthData = generatedData;
-        }
-        
-        setStockData(data);
-      } catch (e) {
-        console.error('Error parsing stock data:', e);
-        setStockData(sampleData);
+    const loadStockData = () => {
+      const chartSymbolHistory = JSON.parse(
+        localStorage.getItem("chartSymbolHistory")
+      );
+
+      if (chartSymbolHistory) {
+        StockChartData(chartSymbolHistory[0].symbol, timeRange)
+          .then(response => {
+            console.log("ttttttt", response);
+
+            setStockData(response.data)
+            setLoading(false)
+          }).catch(error => {
+            console.error("Error fetching stock chart data:", error)
+            setLoading(false)
+          });
       }
-    } else {
-      console.log('No stored data, using sample data');
-      setStockData(sampleData);
-    }
-    
-    setLoading(false);
+    };
+
+    loadStockData();
+
+    let checkCount = 0;
+    checkIntervalRef.current = setInterval(() => {
+      checkCount++;
+      loadStockData();
+
+      if (checkCount >= 10) {
+        clearInterval(checkIntervalRef.current);
+      }
+    }, 500);
+
+    return () => {
+      if (checkIntervalRef.current) {
+        clearInterval(checkIntervalRef.current);
+      }
+    };
   }, []);
 
-  // Transform data for Recharts
   const chartData = useMemo(() => {
     if (!stockData || !stockData.grapthData || stockData.grapthData.length === 0) {
       return [];
@@ -96,8 +64,8 @@ const NseStockDetails = () => {
     return stockData.grapthData
       .map(([timestamp, price, status]) => ({
         timestamp,
-        date: new Date(timestamp).toLocaleDateString('en-IN', { 
-          day: '2-digit', 
+        date: new Date(timestamp).toLocaleDateString('en-IN', {
+          day: '2-digit',
           month: 'short',
           year: timeRange === '1Y' || timeRange === '5Y' ? '2-digit' : undefined
         }),
@@ -108,33 +76,31 @@ const NseStockDetails = () => {
       .reverse();
   }, [stockData, timeRange]);
 
-  // Initialize brush indexes when chartData changes
   useEffect(() => {
     if (chartData.length > 0) {
       setBrushIndexes({ startIndex: 0, endIndex: chartData.length - 1 });
     }
   }, [chartData.length]);
 
-  // Mouse wheel zoom functionality
   useEffect(() => {
     if (!chartData || chartData.length === 0) return;
 
     const handleWheel = (e) => {
       if (chartContainerRef.current && chartContainerRef.current.contains(e.target)) {
         e.preventDefault();
-        
+
         const delta = e.deltaY;
         const currentStartIndex = brushIndexes.startIndex;
         const currentEndIndex = brushIndexes.endIndex;
         const range = currentEndIndex - currentStartIndex;
-        
+
         if (delta < 0) {
           // Scroll up - Zoom In
           const newRange = Math.max(Math.floor(range * 0.85), 5);
           const center = Math.floor((currentStartIndex + currentEndIndex) / 2);
           const newStart = Math.max(0, center - Math.floor(newRange / 2));
           const newEnd = Math.min(chartData.length - 1, newStart + newRange);
-          
+
           setBrushIndexes({ startIndex: newStart, endIndex: newEnd });
           setZoomDomain([newStart, newEnd]);
         } else {
@@ -143,7 +109,7 @@ const NseStockDetails = () => {
           const center = Math.floor((currentStartIndex + currentEndIndex) / 2);
           const newStart = Math.max(0, center - Math.floor(newRange / 2));
           const newEnd = Math.min(chartData.length - 1, newStart + newRange);
-          
+
           setBrushIndexes({ startIndex: newStart, endIndex: newEnd });
           setZoomDomain([newStart, newEnd]);
         }
@@ -164,7 +130,7 @@ const NseStockDetails = () => {
 
   // Calculate statistics based on visible data (zoom level)
   const stats = useMemo(() => {
-    if (chartData.length === 0) {
+    if (!stockData) {
       return {
         current: '0.00',
         change: '0.00',
@@ -177,44 +143,58 @@ const NseStockDetails = () => {
       };
     }
 
-    // Get visible data based on brush/zoom
-    const visibleData = zoomDomain 
+    // Use stockData values for current stats
+    const current = stockData.ltp || stockData.closePrice || 0;
+    const change = stockData.pChange ? (current * stockData.pChange / 100) : 0;
+    const changePercent = stockData.pChange || 0;
+
+    // Calculate chart-based stats from visible data
+    if (chartData.length === 0) {
+      return {
+        current: current.toFixed(2),
+        change: change.toFixed(2),
+        changePercent: changePercent.toFixed(2),
+        high: (stockData.high || current).toFixed(2),
+        low: (stockData.low || current).toFixed(2),
+        avgPrice: current.toFixed(2),
+        isPositive: changePercent >= 0,
+        dataPoints: 0
+      };
+    }
+
+    const visibleData = zoomDomain
       ? chartData.slice(brushIndexes.startIndex, brushIndexes.endIndex + 1)
       : chartData;
 
     if (visibleData.length === 0) {
       return {
-        current: '0.00',
-        change: '0.00',
-        changePercent: '0.00',
-        high: '0.00',
-        low: '0.00',
-        avgPrice: '0.00',
-        isPositive: true,
+        current: current.toFixed(2),
+        change: change.toFixed(2),
+        changePercent: changePercent.toFixed(2),
+        high: (stockData.high || current).toFixed(2),
+        low: (stockData.low || current).toFixed(2),
+        avgPrice: current.toFixed(2),
+        isPositive: changePercent >= 0,
         dataPoints: 0
       };
     }
 
     const prices = visibleData.map(d => d.price);
-    const firstPrice = prices[0];
-    const lastPrice = prices[prices.length - 1];
-    const change = lastPrice - firstPrice;
-    const changePercent = ((change / firstPrice) * 100).toFixed(2);
     const high = Math.max(...prices);
     const low = Math.min(...prices);
     const avgPrice = (prices.reduce((a, b) => a + b, 0) / prices.length).toFixed(2);
 
     return {
-      current: lastPrice.toFixed(2),
+      current: current.toFixed(2),
       change: change.toFixed(2),
-      changePercent,
+      changePercent: changePercent.toFixed(2),
       high: high.toFixed(2),
       low: low.toFixed(2),
       avgPrice,
-      isPositive: change >= 0,
+      isPositive: changePercent >= 0,
       dataPoints: visibleData.length
     };
-  }, [chartData, zoomDomain, brushIndexes]);
+  }, [stockData, chartData, zoomDomain, brushIndexes]);
 
   const timeRanges = ['1D', '1W', '1M', '1Y', '5Y'];
 
@@ -232,7 +212,7 @@ const NseStockDetails = () => {
     const center = Math.floor((startIndex + endIndex) / 2);
     const newStart = Math.max(0, center - Math.floor(newRange / 2));
     const newEnd = Math.min(chartData.length - 1, newStart + newRange);
-    
+
     setBrushIndexes({ startIndex: newStart, endIndex: newEnd });
     setZoomDomain([newStart, newEnd]);
   };
@@ -244,7 +224,7 @@ const NseStockDetails = () => {
     const center = Math.floor((startIndex + endIndex) / 2);
     const newStart = Math.max(0, center - Math.floor(newRange / 2));
     const newEnd = Math.min(chartData.length - 1, newStart + newRange);
-    
+
     setBrushIndexes({ startIndex: newStart, endIndex: newEnd });
     setZoomDomain([newStart, newEnd]);
   };
@@ -307,6 +287,7 @@ const NseStockDetails = () => {
       </div>
     );
   }
+
 
   return (
     <div className="h-screen bg-linear-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 overflow-hidden">
@@ -417,9 +398,8 @@ const NseStockDetails = () => {
                         <button
                           key={range}
                           onClick={() => setTimeRange(range)}
-                          className={`relative px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-300 ${
-                            timeRange === range ? 'text-white' : 'text-slate-400 hover:text-slate-200'
-                          }`}
+                          className={`relative px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-300 ${timeRange === range ? 'text-white' : 'text-slate-400 hover:text-slate-200'
+                            }`}
                         >
                           {timeRange === range && (
                             <div className="absolute inset-0 bg-linear-to-r from-blue-600 to-violet-600 rounded-md shadow-lg shadow-blue-500/30"></div>
@@ -433,9 +413,8 @@ const NseStockDetails = () => {
                     <div className="flex gap-1 p-1 bg-slate-800/50 rounded-lg border border-slate-700/50">
                       <button
                         onClick={() => setChartType('area')}
-                        className={`relative p-1.5 rounded-md transition-all duration-300 ${
-                          chartType === 'area' ? 'text-white' : 'text-slate-400 hover:text-slate-200'
-                        }`}
+                        className={`relative p-1.5 rounded-md transition-all duration-300 ${chartType === 'area' ? 'text-white' : 'text-slate-400 hover:text-slate-200'
+                          }`}
                         title="Area Chart"
                       >
                         {chartType === 'area' && (
@@ -445,9 +424,8 @@ const NseStockDetails = () => {
                       </button>
                       <button
                         onClick={() => setChartType('line')}
-                        className={`relative p-1.5 rounded-md transition-all duration-300 ${
-                          chartType === 'line' ? 'text-white' : 'text-slate-400 hover:text-slate-200'
-                        }`}
+                        className={`relative p-1.5 rounded-md transition-all duration-300 ${chartType === 'line' ? 'text-white' : 'text-slate-400 hover:text-slate-200'
+                          }`}
                         title="Line Chart"
                       >
                         {chartType === 'line' && (
@@ -461,7 +439,7 @@ const NseStockDetails = () => {
               </div>
 
               {/* Chart */}
-              <div 
+              <div
                 ref={chartContainerRef}
                 className="flex-1 p-4 bg-linear-to-br from-slate-900/30 to-slate-800/20 relative group"
               >
@@ -486,21 +464,21 @@ const NseStockDetails = () => {
                       <AreaChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                         <defs>
                           <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
-                            <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.05}/>
+                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
+                            <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.05} />
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.2} />
-                        <XAxis 
-                          dataKey="date" 
-                          stroke="#94a3b8" 
+                        <XAxis
+                          dataKey="date"
+                          stroke="#94a3b8"
                           fontSize={11}
                           tickLine={false}
                           axisLine={{ stroke: '#475569' }}
                           domain={zoomDomain || ['dataMin', 'dataMax']}
                         />
-                        <YAxis 
-                          stroke="#94a3b8" 
+                        <YAxis
+                          stroke="#94a3b8"
                           fontSize={11}
                           tickLine={false}
                           axisLine={{ stroke: '#475569' }}
@@ -508,17 +486,17 @@ const NseStockDetails = () => {
                           tickFormatter={(value) => `₹${value.toFixed(0)}`}
                         />
                         <Tooltip content={<CustomTooltip />} />
-                        <Area 
-                          type="monotone" 
-                          dataKey="price" 
-                          stroke="#3b82f6" 
+                        <Area
+                          type="monotone"
+                          dataKey="price"
+                          stroke="#3b82f6"
                           strokeWidth={2.5}
-                          fill="url(#colorPrice)" 
+                          fill="url(#colorPrice)"
                           animationDuration={800}
                         />
-                        <Brush 
-                          dataKey="date" 
-                          height={30} 
+                        <Brush
+                          dataKey="date"
+                          height={30}
                           stroke="#3b82f6"
                           fill="#1e293b"
                           onChange={handleBrushChange}
@@ -529,16 +507,16 @@ const NseStockDetails = () => {
                     ) : (
                       <LineChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.2} />
-                        <XAxis 
-                          dataKey="date" 
-                          stroke="#94a3b8" 
+                        <XAxis
+                          dataKey="date"
+                          stroke="#94a3b8"
                           fontSize={11}
                           tickLine={false}
                           axisLine={{ stroke: '#475569' }}
                           domain={zoomDomain || ['dataMin', 'dataMax']}
                         />
-                        <YAxis 
-                          stroke="#94a3b8" 
+                        <YAxis
+                          stroke="#94a3b8"
                           fontSize={11}
                           tickLine={false}
                           axisLine={{ stroke: '#475569' }}
@@ -546,18 +524,18 @@ const NseStockDetails = () => {
                           tickFormatter={(value) => `₹${value.toFixed(0)}`}
                         />
                         <Tooltip content={<CustomTooltip />} />
-                        <Line 
-                          type="monotone" 
-                          dataKey="price" 
-                          stroke="#3b82f6" 
+                        <Line
+                          type="monotone"
+                          dataKey="price"
+                          stroke="#3b82f6"
                           strokeWidth={2.5}
                           dot={{ fill: '#3b82f6', r: 3 }}
                           activeDot={{ r: 5, fill: '#8b5cf6' }}
                           animationDuration={800}
                         />
-                        <Brush 
-                          dataKey="date" 
-                          height={30} 
+                        <Brush
+                          dataKey="date"
+                          height={30}
                           stroke="#3b82f6"
                           fill="#1e293b"
                           onChange={handleBrushChange}
