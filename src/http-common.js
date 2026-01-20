@@ -9,7 +9,7 @@ export default axios.create({
   },
 });
 
-export const resortApi = axios.create({
+export const NseApi = axios.create({
   baseURL: API_URL,
   headers: {
     "Content-type": "application/json",
