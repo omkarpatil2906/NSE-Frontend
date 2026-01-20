@@ -19,7 +19,7 @@ const MostActiveEquity = () => {
 
 
   console.log("Data", data);
-  
+
 
 
   const tabs = [
@@ -138,61 +138,26 @@ const MostActiveEquity = () => {
   };
 
 
- const openStockDetailsPage = async (item) => {
-  try {
-    const stockInfo = {
-      identifier: item.identifier || item.symbol,
-      name: item.symbol,
-      symbol: item.symbol,
-      ltp: item.ltp,
-      open: item.open,
-      high: item.high,
-      low: item.low,
-      prevClose: item.prevClose,
-      pChange: item.pChange,
-      volume: item.volume,
-      value: item.value,
-      series: item.series || 'EQ',
-      closePrice: item.ltp,
-      grapthData: []
-    };
+const openStockDetailsPage = (item) => {
+  const STORAGE_KEY = "chartSymbolHistory";
+  const MAX_ITEMS = 4;
 
-    // Store in localStorage
-    localStorage.setItem('selectedStock', JSON.stringify(stockInfo));
+  const newEntry = {
+    symbol: item.identifier,
+  };
 
-    // Open the new tab immediately
-    const newTab = window.open('/stock-details', '_blank', 'noopener,noreferrer');
+  const existing =
+    JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
 
-    // Fetch chart data in background
-    StockChartData(item.identifier || item.symbol, "1D")
-      .then(response => {
-        console.log('API Response:', response);
-        
-        if (response.data && response.data.success) {
-          // Update with chart data
-          const updatedStockInfo = {
-            ...stockInfo,
-            identifier: response.data.data.identifier,
-            name: response.data.data.name,
-            closePrice: response.data.data.closePrice,
-            grapthData: response.data.data.graphData // Note: API uses 'graphData' not 'grapthData'
-          };
-          
-          // Update localStorage with chart data
-          localStorage.setItem('selectedStock', JSON.stringify(updatedStockInfo));
-          
-          console.log('Stock data updated with chart:', updatedStockInfo);
-        }
-      })
-      .catch(err => {
-        console.error('Error fetching chart data:', err);
-        // Data is already stored, chart will show "No data available"
-      });
+  const filtered = existing.filter(
+    (x) => x.symbol !== newEntry.symbol
+  );
 
-  } catch (err) {
-    console.error('Error opening stock details:', err);
-  }
+  const updated = [newEntry, ...filtered].slice(0, MAX_ITEMS);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  window.open("/stock-details", "_blank", "noopener,noreferrer");
 };
+
 
   const currentTab = tabs.find(t => t.id === activeTab);
 
