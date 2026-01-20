@@ -1,8 +1,7 @@
 import { NseApi } from "../../http-common"
 
-
-export const MainBoardData = async (sort) => {
-    return await NseApi.get(`/mainboard/sort/${sort}`, {
+export const StockChartData = async (symbol, duration) => {
+    return await NseApi.get(`/stock-details/chart/${symbol}/${duration}`, {
 
     })
 }

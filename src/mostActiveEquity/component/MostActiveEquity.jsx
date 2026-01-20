@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { RefreshCw, TrendingUp, TrendingDown, Activity, ChevronDown, Wifi, WifiOff, BarChart3, Grid3x3, Table2, Sparkles, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import socketService from '../services/SocketService';
 import NseStockDetails from './NseStockDetails';
+import { StockChartData } from '../services/NseStockDetailsServices';
 
 
 const MostActiveEquity = () => {
@@ -15,6 +16,10 @@ const MostActiveEquity = () => {
   const [activeTab, setActiveTab] = useState('main-board');
   const [sort, setSort] = useState('value');
   const [priceFilter, setPriceFilter] = useState('above20');
+
+
+  console.log("Data", data);
+  
 
 
   const tabs = [
@@ -135,32 +140,10 @@ const MostActiveEquity = () => {
 
  const openStockDetailsPage = async (item) => {
   try {
-    // First, try to fetch historical data from your API
-    // Replace this URL with your actual API endpoint
-    const response = await fetch(`/api/stock-history/${item.symbol}`);
-    let graphData = [];
-    
-    if (response.ok) {
-      graphData = await response.json();
-    } else {
-      // If API fails, generate sample data based on current price
-      const basePrice = item.ltp;
-      const now = Date.now();
-      
-      for (let i = 29; i >= 0; i--) {
-        const timestamp = now - (i * 24 * 60 * 60 * 1000);
-        const randomVariation = (Math.random() - 0.5) * basePrice * 0.05;
-        const price = basePrice + randomVariation;
-        graphData.push([timestamp, price, "NM"]);
-      }
-    }
-    
-    // Prepare complete stock data object
-    const stockData = {
-      symbol: item.symbol,
+    const stockInfo = {
+      identifier: item.identifier || item.symbol,
       name: item.symbol,
-      identifier: item.symbol,
-      series: item.series || 'EQ',
+      symbol: item.symbol,
       ltp: item.ltp,
       open: item.open,
       high: item.high,
@@ -169,41 +152,45 @@ const MostActiveEquity = () => {
       pChange: item.pChange,
       volume: item.volume,
       value: item.value,
+      series: item.series || 'EQ',
       closePrice: item.ltp,
-      ca: item.ca,
-      grapthData: graphData // Historical data array
+      grapthData: []
     };
 
     // Store in localStorage
-    localStorage.setItem('selectedStock', JSON.stringify(stockData));
-    
-    console.log('Opening stock details with data:', stockData);
-    
-    // Open in new tab
-    window.open('/stock-details', '_blank', 'noopener,noreferrer');
-    
-  } catch (error) {
-    console.error('Error preparing stock data:', error);
-    
-    // Fallback: still open the page with basic data
-    const stockData = {
-      symbol: item.symbol,
-      name: item.symbol,
-      identifier: item.symbol,
-      ltp: item.ltp,
-      open: item.open,
-      high: item.high,
-      low: item.low,
-      prevClose: item.prevClose,
-      pChange: item.pChange,
-      volume: item.volume,
-      value: item.value,
-      closePrice: item.ltp,
-      grapthData: [] 
-    };
-    
-    localStorage.setItem('selectedStock', JSON.stringify(stockData));
-    window.open('/stock-details', '_blank', 'noopener,noreferrer');
+    localStorage.setItem('selectedStock', JSON.stringify(stockInfo));
+
+    // Open the new tab immediately
+    const newTab = window.open('/stock-details', '_blank', 'noopener,noreferrer');
+
+    // Fetch chart data in background
+    StockChartData(item.identifier || item.symbol, "1D")
+      .then(response => {
+        console.log('API Response:', response);
+        
+        if (response.data && response.data.success) {
+          // Update with chart data
+          const updatedStockInfo = {
+            ...stockInfo,
+            identifier: response.data.data.identifier,
+            name: response.data.data.name,
+            closePrice: response.data.data.closePrice,
+            grapthData: response.data.data.graphData // Note: API uses 'graphData' not 'grapthData'
+          };
+          
+          // Update localStorage with chart data
+          localStorage.setItem('selectedStock', JSON.stringify(updatedStockInfo));
+          
+          console.log('Stock data updated with chart:', updatedStockInfo);
+        }
+      })
+      .catch(err => {
+        console.error('Error fetching chart data:', err);
+        // Data is already stored, chart will show "No data available"
+      });
+
+  } catch (err) {
+    console.error('Error opening stock details:', err);
   }
 };
 
