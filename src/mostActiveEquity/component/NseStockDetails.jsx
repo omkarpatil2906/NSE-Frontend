@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush } from 'recharts';
 import { TrendingUp, TrendingDown, Calendar, BarChart3, Activity, Home, Maximize2, ZoomIn, ZoomOut, Maximize } from 'lucide-react';
 import { StockChartData } from '../services/NseStockDetailsServices';
+import { format } from 'date-fns';
 
 const NseStockDetails = () => {
   const [stockData, setStockData] = useState(null);
@@ -11,65 +12,41 @@ const NseStockDetails = () => {
   const [zoomDomain, setZoomDomain] = useState(null);
   const [brushIndexes, setBrushIndexes] = useState({ startIndex: 0, endIndex: 100 });
   const chartContainerRef = useRef(null);
-  const checkIntervalRef = useRef(null);
 
 
-  console.log(new Date(1768906499000))
+
 
   // Load stock data from localStorage with live updates
   useEffect(() => {
-    const loadStockData = () => {
-      const chartSymbolHistory = JSON.parse(
-        localStorage.getItem("chartSymbolHistory")
-      );
 
-      if (chartSymbolHistory) {
-        StockChartData(chartSymbolHistory[0].symbol, timeRange)
-          .then(response => {
-            console.log("ttttttt", response);
+    const chartSymbolHistory = JSON.parse(
+      localStorage.getItem("chartSymbolHistory")
+    );
 
-            setStockData(response.data)
-            setLoading(false)
-          }).catch(error => {
-            console.error("Error fetching stock chart data:", error)
-            setLoading(false)
-          });
-      }
-    };
+    if (chartSymbolHistory) {
+      StockChartData(chartSymbolHistory[0].symbol, timeRange)
+        .then(response => {
+          console.log("ttttttt", response.data.data);
+          setStockData(response?.data?.data)
+          setLoading(false)
+        }).catch(error => {
+          console.error("Error fetching stock chart data:", error)
+          setLoading(false)
+        });
+    }
 
-    loadStockData();
-
-    let checkCount = 0;
-    checkIntervalRef.current = setInterval(() => {
-      checkCount++;
-      loadStockData();
-
-      if (checkCount >= 10) {
-        clearInterval(checkIntervalRef.current);
-      }
-    }, 500);
-
-    return () => {
-      if (checkIntervalRef.current) {
-        clearInterval(checkIntervalRef.current);
-      }
-    };
-  }, []);
+  }, [timeRange]);
 
   const chartData = useMemo(() => {
-    if (!stockData || !stockData.grapthData || stockData.grapthData.length === 0) {
+    if (!stockData || !stockData.graphData || stockData.graphData.length === 0) {
       return [];
     }
 
-    return stockData.grapthData
+    return stockData.graphData
       .map(([timestamp, price, status]) => ({
         timestamp,
-        date: new Date(timestamp).toLocaleDateString('en-IN', {
-          day: '2-digit',
-          month: 'short',
-          year: timeRange === '1Y' || timeRange === '5Y' ? '2-digit' : undefined
-        }),
-        fullDate: new Date(timestamp).toLocaleDateString('en-IN'),
+        date: format(new Date(timestamp), 'dd MMM'),
+        fullDate: format(new Date(timestamp), 'dd MMM yyyy HH:mm'),
         price: parseFloat(price),
         status
       }))
@@ -81,6 +58,9 @@ const NseStockDetails = () => {
       setBrushIndexes({ startIndex: 0, endIndex: chartData.length - 1 });
     }
   }, [chartData.length]);
+
+  console.log(chartData);
+  
 
   useEffect(() => {
     if (!chartData || chartData.length === 0) return;
