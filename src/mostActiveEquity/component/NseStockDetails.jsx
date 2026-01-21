@@ -13,9 +13,6 @@ const NseStockDetails = () => {
   const [brushIndexes, setBrushIndexes] = useState({ startIndex: 0, endIndex: 100 });
   const chartContainerRef = useRef(null);
 
-
-
-
   // Load stock data from localStorage with live updates
   useEffect(() => {
 
@@ -42,15 +39,24 @@ const NseStockDetails = () => {
       return [];
     }
 
-    return stockData.graphData
-      .map(([timestamp, price, status]) => ({
-        timestamp,
-        date: format(new Date(timestamp), 'dd MMM'),
-        fullDate: format(new Date(timestamp), 'dd MMM yyyy HH:mm'),
-        price: parseFloat(price),
-        status
-      }))
-      .reverse();
+    const mappedData = stockData.graphData
+      .map(([timestamp, price, status]) => {
+        const date = new Date(timestamp);
+        // Subtract 5.5 hours (IST offset) to get market time
+        const marketTime = new Date(date.getTime() - (5.5 * 60 * 60 * 1000));
+
+        return {
+          timestamp,
+          // For 1D show time (HH:mm), for others show date (dd MMM)
+          date: timeRange === '1D'
+            ? format(marketTime, 'HH:mm')
+            : format(marketTime, 'dd MMM'),
+          fullDate: format(marketTime, 'dd MMM yyyy HH:mm'),
+          price: parseFloat(price),
+          status
+        };
+      })
+    return timeRange === '1D' ? mappedData : mappedData.reverse();
   }, [stockData, timeRange]);
 
   useEffect(() => {
@@ -60,7 +66,7 @@ const NseStockDetails = () => {
   }, [chartData.length]);
 
   console.log(chartData);
-  
+
 
   useEffect(() => {
     if (!chartData || chartData.length === 0) return;
