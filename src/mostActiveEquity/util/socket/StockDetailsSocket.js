@@ -4,38 +4,35 @@ import { io } from 'socket.io-client';
 class StockDetailsSocketService {
   constructor() {
     this.socket = null;
-    this.API_BASE = 'http://localhost:5000'; 
+    this.API_BASE = 'http://localhost:5000';
     this.namespace = '/stockdetails';
     this.listeners = new Map();
     this.currentSubscription = null;
-    this.reconnectAttempts = 0;
-    this.maxReconnectAttempts = 5;
     this.isConnecting = false;
   }
 
   /**
-   * Connect to stock details namespace
+   * Connect to socket namespace
    */
   connect() {
-    if (this.socket?.connected) {
-      console.log('✅ [StockDetails] Already connected');
+    if (this.socket && this.socket.connected) {
+      console.log('✅ Already connected to StockDetails socket');
       return this.socket;
     }
 
     if (this.isConnecting) {
-      console.log('⏳ [StockDetails] Connection already in progress');
+      console.log('⏳ Connection already in progress...');
       return this.socket;
     }
 
-    console.log(`🔌 [StockDetails] Connecting to ${this.API_BASE}${this.namespace}`);
     this.isConnecting = true;
+    console.log(`🔌 Connecting to ${this.API_BASE}${this.namespace}`);
 
     this.socket = io(`${this.API_BASE}${this.namespace}`, {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: this.maxReconnectAttempts,
+      reconnectionAttempts: 5,
       timeout: 10000
     });
 
@@ -48,121 +45,129 @@ class StockDetailsSocketService {
    */
   setupSocketListeners() {
     this.socket.on('connect', () => {
-      console.log(`✅ [StockDetails] Connected: ${this.socket.id}`);
-      this.reconnectAttempts = 0;
+      console.log(`✅ [StockDetails] Connected:`, this.socket.id);
       this.isConnecting = false;
-      this.emit('connected', { socketId: this.socket.id });
+      this.emit('connectionStatus', 'connected');
 
       // Resubscribe if there was a previous subscription
       if (this.currentSubscription) {
-        console.log('🔄 [StockDetails] Resubscribing after reconnection');
-        const { symbol, duration, dataType } = this.currentSubscription;
-        this.doSubscribe(symbol, duration, dataType);
+        console.log('🔄 Resubscribing after reconnection...');
+        this.socket.emit('subscribe', this.currentSubscription);
       }
     });
 
     this.socket.on('disconnect', (reason) => {
-      console.log(`❌ [StockDetails] Disconnected. Reason: ${reason}`);
-      this.isConnecting = false;
-      this.emit('disconnected', { reason });
+      console.log(`❌ [StockDetails] Disconnected. Reason:`, reason);
+      this.emit('connectionStatus', 'disconnected');
     });
 
     this.socket.on('connect_error', (error) => {
-      this.reconnectAttempts++;
+      console.error(`⚠️ [StockDetails] Connection error:`, error.message);
       this.isConnecting = false;
-      console.error(`⚠️ [StockDetails] Connection error (${this.reconnectAttempts}/${this.maxReconnectAttempts}):`, error.message);
-      this.emit('error', { 
-        error: error.message, 
-        type: 'connection',
-        attempts: this.reconnectAttempts 
-      });
+      this.emit('connectionStatus', 'error');
+      this.emit('error', `Connection failed: ${error.message}`);
     });
 
-    this.socket.on('stockDetailsUpdate', (data) => {
-      console.log(`📊 [StockDetails] Update received:`, {
-        type: data.type,
-        symbol: data.symbol,
-        duration: data.duration,
-        dataType: data.dataType,
-        timestamp: data.timestamp
-      });
-      
-      this.emit('stockUpdate', data);
+    this.socket.on('stockDetailsUpdate', (payload) => {
+      console.log(`📊 [StockDetails] Update received:`, payload.type, payload.dataType);
+      this.emit('stockDetailsUpdate', payload);
     });
 
     this.socket.on('error', (error) => {
       console.error(`❌ [StockDetails] Socket error:`, error);
-      this.emit('error', { 
-        error: error.message || 'Socket error occurred', 
-        type: 'api' 
-      });
+      this.emit('error', error.message || 'Socket error occurred');
     });
 
     this.socket.on('pong', () => {
-      console.log(`🏓 [StockDetails] Pong received`);
-      this.emit('pong');
+      console.log(`🏓 Pong received from StockDetails socket`);
     });
   }
 
   /**
-   * Subscribe to stock updates
-   * @param {string} symbol - Stock symbol
-   * @param {string} duration - Time duration (1D, 1W, 1M, 1Y, 5Y)
-   * @param {string} dataType - Type of data ('chart', 'historical', 'live')
+   * Subscribe to chart data
+   * @param {string} symbol - Stock symbol (e.g., 'HDFCBANK')
+   * @param {string} duration - Duration (e.g., '1', '7', '30', '365', '1825')
    */
-  subscribe(symbol, duration, dataType = 'chart') {
-    if (!this.socket?.connected) {
-      console.error('❌ [StockDetails] Cannot subscribe: Socket not connected');
-      
-      // Connect first, then subscribe
+  subscribeChart(symbol, duration) {
+    const payload = {
+      type: 'chart',
+      symbol,
+      duration
+    };
+    this.subscribe(payload);
+  }
+
+  /**
+   * Subscribe to live quote data
+   * @param {string} symbol - Stock symbol
+   * @param {string} marketType - Market type (default: 'N')
+   * @param {string} series - Series (default: 'EQ')
+   */
+  subscribeQuote(symbol, marketType = 'N', series = 'EQ') {
+    const payload = {
+      type: 'quote',
+      symbol,
+      marketType,
+      series
+    };
+    this.subscribe(payload);
+  }
+
+  /**
+   * Subscribe to historical data
+   * @param {string} symbol - Stock symbol
+   * @param {string} fromDate - Start date (DD-MM-YYYY)
+   * @param {string} toDate - End date (DD-MM-YYYY)
+   * @param {string} series - Series (default: 'EQ')
+   */
+  subscribeHistorical(symbol, fromDate, toDate, series = 'EQ') {
+    const payload = {
+      type: 'historical',
+      symbol,
+      fromDate,
+      toDate,
+      series
+    };
+    this.subscribe(payload);
+  }
+
+  /**
+   * Generic subscribe method
+   */
+  subscribe(payload) {
+    if (!this.socket || !this.socket.connected) {
+      console.log('⏳ Socket not connected, connecting first...');
       this.connect();
+      
+      // Wait for connection and then subscribe
       this.socket.once('connect', () => {
-        this.doSubscribe(symbol, duration, dataType);
+        console.log('✅ Connected, now subscribing...');
+        this.subscribe(payload);
       });
-      return false;
+      return;
     }
 
-    return this.doSubscribe(symbol, duration, dataType);
+    console.log('📤 Subscribing to:', payload);
+    this.currentSubscription = payload;
+    this.socket.emit('subscribe', payload);
   }
 
   /**
-   * Perform the actual subscription
-   */
-  doSubscribe(symbol, duration, dataType = 'chart') {
-    console.log(`📡 [StockDetails] Subscribing to ${symbol} (duration: ${duration}, type: ${dataType})`);
-    
-    // Store current subscription for reconnection
-    this.currentSubscription = { symbol, duration, dataType };
-    
-    this.socket.emit('subscribe', { 
-      symbol, 
-      duration, 
-      dataType,
-      series: 'EQ' 
-    });
-    return true;
-  }
-
-  /**
-   * Unsubscribe from current stock
+   * Unsubscribe from current subscription
    */
   unsubscribe() {
-    if (!this.socket?.connected) {
-      console.warn('⚠️ [StockDetails] Cannot unsubscribe: Socket not connected');
-      return false;
-    }
-
-    console.log('🔕 [StockDetails] Unsubscribing from current stock');
+    if (!this.socket || !this.socket.connected) return;
+    
+    console.log('🔌 Unsubscribing from StockDetails');
     this.socket.emit('unsubscribe');
     this.currentSubscription = null;
-    return true;
   }
 
   /**
    * Send ping to keep connection alive
    */
   ping() {
-    if (this.socket?.connected) {
+    if (this.socket && this.socket.connected) {
       this.socket.emit('ping');
     }
   }
@@ -172,15 +177,16 @@ class StockDetailsSocketService {
    */
   on(event, callback) {
     if (!this.listeners.has(event)) {
-      this.listeners.set(event, new Set());
+      this.listeners.set(event, []);
     }
-    this.listeners.get(event).add(callback);
+    this.listeners.get(event).push(callback);
 
     // Return unsubscribe function
     return () => {
       const callbacks = this.listeners.get(event);
-      if (callbacks) {
-        callbacks.delete(callback);
+      const index = callbacks.indexOf(callback);
+      if (index > -1) {
+        callbacks.splice(index, 1);
       }
     };
   }
@@ -192,62 +198,56 @@ class StockDetailsSocketService {
     if (!this.listeners.has(event)) return;
     
     const callbacks = this.listeners.get(event);
-    callbacks.delete(callback);
+    const index = callbacks.indexOf(callback);
+    if (index > -1) {
+      callbacks.splice(index, 1);
+    }
   }
 
   /**
    * Emit event to registered listeners
    */
   emit(event, data) {
-    const callbacks = this.listeners.get(event);
-    if (!callbacks || callbacks.size === 0) return;
+    if (!this.listeners.has(event)) return;
     
-    callbacks.forEach(callback => {
+    const listeners = this.listeners.get(event);
+    listeners.forEach(callback => {
       try {
         callback(data);
       } catch (error) {
-        console.error(`❌ [StockDetails] Error in ${event} listener:`, error);
+        console.error(`Error in ${event} listener:`, error);
       }
     });
   }
 
   /**
-   * Disconnect and cleanup
+   * Disconnect from socket
    */
   disconnect() {
-    if (this.socket) {
-      console.log('🔌 [StockDetails] Disconnecting...');
-      this.unsubscribe();
-      this.socket.removeAllListeners();
-      this.socket.disconnect();
-      this.socket = null;
-      this.currentSubscription = null;
-      this.listeners.clear();
-      this.reconnectAttempts = 0;
-      this.isConnecting = false;
-      console.log('✅ [StockDetails] Disconnected and cleaned up');
-    }
+    if (!this.socket) return;
+
+    console.log('🔌 Disconnecting from StockDetails socket');
+    this.unsubscribe();
+    this.socket.removeAllListeners();
+    this.socket.disconnect();
+    this.socket = null;
+    this.currentSubscription = null;
+    this.listeners.clear();
+    this.isConnecting = false;
   }
 
   /**
    * Check if connected
    */
   isConnected() {
-    return this.socket?.connected || false;
+    return this.socket ? this.socket.connected : false;
   }
 
   /**
-   * Get socket ID
+   * Get current socket instance
    */
-  getSocketId() {
-    return this.socket?.id || null;
-  }
-
-  /**
-   * Get current subscription info
-   */
-  getCurrentSubscription() {
-    return this.currentSubscription;
+  getSocket() {
+    return this.socket;
   }
 }
 

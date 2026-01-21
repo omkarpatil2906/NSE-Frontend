@@ -10,6 +10,9 @@ function TradeInformation({ chartData, stockInfo, timeRange, onTimeRangeChange }
     const [brushIndexes, setBrushIndexes] = useState({ startIndex: 0, endIndex: 100 });
     const chartContainerRef = useRef(null);
 
+    console.log(chartData, "trade info");
+    
+
     // Process chart data from props (socket data)
     const processedChartData = useMemo(() => {
         if (!chartData || !chartData.graphData || chartData.graphData.length === 0) {
@@ -35,6 +38,9 @@ function TradeInformation({ chartData, stockInfo, timeRange, onTimeRangeChange }
         
         return timeRange === '1D' ? mappedData : mappedData.reverse();
     }, [chartData, timeRange]);
+
+    console.log("Process", processedChartData);
+    
 
     // Update brush indexes when chart data changes
     useEffect(() => {
@@ -91,71 +97,6 @@ function TradeInformation({ chartData, stockInfo, timeRange, onTimeRangeChange }
         };
     }, [brushIndexes, processedChartData]);
 
-    // Calculate stats
-    const stats = useMemo(() => {
-        if (!chartData || !stockInfo) {
-            return {
-                current: '0.00',
-                change: '0.00',
-                changePercent: '0.00',
-                high: '0.00',
-                low: '0.00',
-                avgPrice: '0.00',
-                isPositive: true,
-                dataPoints: 0
-            };
-        }
-
-        const current = chartData.ltp || chartData.closePrice || 0;
-        const change = chartData.pChange ? (current * chartData.pChange / 100) : 0;
-        const changePercent = chartData.pChange || 0;
-
-        if (processedChartData.length === 0) {
-            return {
-                current: current.toFixed(2),
-                change: change.toFixed(2),
-                changePercent: changePercent.toFixed(2),
-                high: (stockInfo.priceInfo?.high || current).toFixed(2),
-                low: (stockInfo.priceInfo?.low || current).toFixed(2),
-                avgPrice: current.toFixed(2),
-                isPositive: changePercent >= 0,
-                dataPoints: 0
-            };
-        }
-
-        const visibleData = zoomDomain
-            ? processedChartData.slice(brushIndexes.startIndex, brushIndexes.endIndex + 1)
-            : processedChartData;
-
-        if (visibleData.length === 0) {
-            return {
-                current: current.toFixed(2),
-                change: change.toFixed(2),
-                changePercent: changePercent.toFixed(2),
-                high: (stockInfo.priceInfo?.high || current).toFixed(2),
-                low: (stockInfo.priceInfo?.low || current).toFixed(2),
-                avgPrice: current.toFixed(2),
-                isPositive: changePercent >= 0,
-                dataPoints: 0
-            };
-        }
-
-        const prices = visibleData.map(d => d.price);
-        const high = Math.max(...prices);
-        const low = Math.min(...prices);
-        const avgPrice = (prices.reduce((a, b) => a + b, 0) / prices.length).toFixed(2);
-
-        return {
-            current: current.toFixed(2),
-            change: change.toFixed(2),
-            changePercent: changePercent.toFixed(2),
-            high: high.toFixed(2),
-            low: low.toFixed(2),
-            avgPrice,
-            isPositive: changePercent >= 0,
-            dataPoints: visibleData.length
-        };
-    }, [chartData, stockInfo, processedChartData, zoomDomain, brushIndexes]);
 
     const timeRanges = ['1D', '1W', '1M', '1Y', '5Y'];
 
@@ -219,11 +160,7 @@ function TradeInformation({ chartData, stockInfo, timeRange, onTimeRangeChange }
                         <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4 text-slate-400" />
                             <span className="text-sm font-semibold text-slate-300">Historical Data</span>
-                            {processedChartData.length > 0 && (
-                                <span className="text-xs text-slate-500 bg-slate-800/50 px-2 py-1 rounded">
-                                    {stats.dataPoints} points
-                                </span>
-                            )}
+                           
                         </div>
 
                         <div className="flex items-center gap-2">
@@ -316,6 +253,8 @@ function TradeInformation({ chartData, stockInfo, timeRange, onTimeRangeChange }
                             <span>Scroll to zoom</span>
                         </p>
                     </div>
+
+                    
 
                     {processedChartData.length === 0 ? (
                         <div className="h-full flex items-center justify-center">
