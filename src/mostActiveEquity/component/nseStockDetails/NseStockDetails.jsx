@@ -1,5 +1,5 @@
 // components/NseStockDetails.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BarChart3, Home, ArrowUpRight, ArrowDownRight, Clock, Activity, Calendar } from 'lucide-react';
 import stockDetailsSocket from '../../util/socket/StockDetailsSocket';
 import TradeInformation from './TradeInformation';
@@ -8,16 +8,23 @@ import { StockInfoData } from '../../services/NseStockDetailsServices';
 
 const NseStockDetails = () => {
   const [stockInfo, setStockInfo] = useState(null);
-  const [stockData, setStockData] = useState(null);
+  const [chartData, setChartData] = useState(null);
+  const [liveData, setLiveData] = useState(null);
   const [activeTab, setActiveTab] = useState('trade');
   const [timeRange, setTimeRange] = useState('1D');
   const [lastUpdate, setLastUpdate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [socketStatus, setSocketStatus] = useState('disconnected');
   const [error, setError] = useState(null);
+  
+  // Use ref to track if initial fetch is done
+  const initialFetchDone = useRef(false);
+  const socketInitialized = useRef(false);
 
-  // Fetch initial stock info from API
+  // Fetch initial stock info from API ONLY ONCE
   useEffect(() => {
+    if (initialFetchDone.current) return;
+    
     const fetchStockInfo = async () => {
       try {
         const chartSymbolHistory = JSON.parse(localStorage.getItem("chartSymbolHistory"));
@@ -34,6 +41,7 @@ const NseStockDetails = () => {
         
         setStockInfo(stockInfoData);
         setLoading(false);
+        initialFetchDone.current = true;
       } catch (err) {
         console.error('Error fetching stock info:', err);
         setError(err.message || 'Failed to load stock information');
@@ -42,13 +50,14 @@ const NseStockDetails = () => {
     };
 
     fetchStockInfo();
-  }, []);
+  }, []); // Empty dependency array - run only once
 
-  // Setup socket connection
+  // Setup socket connection ONLY ONCE when stockInfo is available
   useEffect(() => {
-    if (!stockInfo) return;
+    if (!stockInfo || socketInitialized.current) return;
 
     console.log('🚀 Setting up socket connection for:', stockInfo.metaData?.symbol);
+    socketInitialized.current = true;
 
     // Connect to socket
     stockDetailsSocket.connect();
@@ -59,10 +68,10 @@ const NseStockDetails = () => {
       setSocketStatus('connected');
       setError(null);
       
-      // Subscribe to stock updates
+      // Subscribe to stock updates for chart data
       const symbol = stockInfo.metaData?.symbol;
       if (symbol) {
-        stockDetailsSocket.subscribe(symbol, timeRange);
+        stockDetailsSocket.subscribe(symbol, timeRange, 'chart');
       }
     });
 
@@ -72,47 +81,48 @@ const NseStockDetails = () => {
     });
 
     const unsubscribeStockUpdate = stockDetailsSocket.on('stockUpdate', (data) => {
-      console.log('📊 Stock update received:', data.type);
+      console.log('📊 Stock update received:', data.type, 'dataType:', data.dataType);
       
-      if (data.type === 'initial') {
-        // Initial data load
-        setStockData(data.data);
-        console.log('✅ Initial data loaded:', data.data);
-      } else if (data.type === 'update') {
-        // Incremental update
-        setStockData(prevData => {
-          if (!prevData) return data.data;
-          
-          // Apply incremental changes
-          const updatedData = { ...prevData };
-          const changes = data.changes;
-          
-          // Add new data points
-          if (changes.added && changes.added.length > 0) {
-            updatedData.graphData = [...(prevData.graphData || []), ...changes.added];
-            console.log(`➕ Added ${changes.added.length} new data points`);
-          }
-          
-          // Update existing data points
-          if (changes.updated && changes.updated.length > 0) {
-            const updatedMap = new Map(changes.updated.map(item => [item[0], item]));
-            updatedData.graphData = (prevData.graphData || []).map(item => 
-              updatedMap.has(item[0]) ? updatedMap.get(item[0]) : item
-            );
-            console.log(`🔄 Updated ${changes.updated.length} data points`);
-          }
-          
-          // Remove data points
-          if (changes.removed && changes.removed.length > 0) {
-            const removedSet = new Set(changes.removed);
-            updatedData.graphData = (prevData.graphData || []).filter(
-              item => !removedSet.has(item[0])
-            );
-            console.log(`➖ Removed ${changes.removed.length} data points`);
-          }
-          
-          return updatedData;
-        });
+      // Handle different data types
+      if (data.dataType === 'chart') {
+        if (data.type === 'initial') {
+          setChartData(data.data);
+          console.log('✅ Initial chart data loaded');
+        } else if (data.type === 'update') {
+          setChartData(prevData => {
+            if (!prevData) return data.data;
+            
+            // Apply incremental changes
+            const updatedData = { ...prevData };
+            const changes = data.changes;
+            
+            if (changes.added?.length > 0) {
+              updatedData.graphData = [...(prevData.graphData || []), ...changes.added];
+              console.log(`➕ Added ${changes.added.length} new data points`);
+            }
+            
+            if (changes.updated?.length > 0) {
+              const updatedMap = new Map(changes.updated.map(item => [item[0], item]));
+              updatedData.graphData = (prevData.graphData || []).map(item => 
+                updatedMap.has(item[0]) ? updatedMap.get(item[0]) : item
+              );
+              console.log(`🔄 Updated ${changes.updated.length} data points`);
+            }
+            
+            if (changes.removed?.length > 0) {
+              const removedSet = new Set(changes.removed);
+              updatedData.graphData = (prevData.graphData || []).filter(
+                item => !removedSet.has(item[0])
+              );
+              console.log(`➖ Removed ${changes.removed.length} data points`);
+            }
+            
+            return updatedData;
+          });
+        }
+      } else if (data.dataType === 'live') {
+        setLiveData(data.data);
+        console.log('✅ Live data updated');
       }
       
       setLastUpdate(new Date(data.timestamp));
@@ -135,19 +145,21 @@ const NseStockDetails = () => {
       unsubscribeStockUpdate();
       unsubscribeError();
       stockDetailsSocket.disconnect();
+      socketInitialized.current = false;
     };
-  }, [stockInfo]);
+  }, [stockInfo]); // Only depend on stockInfo
 
   // Handle time range changes
   useEffect(() => {
-    if (stockInfo && socketStatus === 'connected') {
-      const symbol = stockInfo.metaData?.symbol;
-      if (symbol) {
-        console.log(`🔄 Changing time range to: ${timeRange}`);
-        stockDetailsSocket.subscribe(symbol, timeRange);
-      }
+    if (!stockInfo || !socketInitialized.current || socketStatus !== 'connected') return;
+    
+    const symbol = stockInfo.metaData?.symbol;
+    if (symbol) {
+      console.log(`🔄 Changing time range to: ${timeRange}`);
+      // Only subscribe to chart data when time range changes
+      stockDetailsSocket.subscribe(symbol, timeRange, 'chart');
     }
-  }, [timeRange, stockInfo, socketStatus]);
+  }, [timeRange]); // Only depend on timeRange
 
   // Handle tab changes
   const handleTabChange = (tab) => {
@@ -164,7 +176,7 @@ const NseStockDetails = () => {
   // Loading state
   if (loading) {
     return (
-      <div className="h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+      <div className="h-screen bg-linear-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <p className="text-slate-400 text-lg">Loading stock data...</p>
@@ -176,7 +188,7 @@ const NseStockDetails = () => {
   // Error state
   if (error && !stockInfo) {
     return (
-      <div className="h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+      <div className="h-screen bg-linear-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
         <div className="text-center">
           <BarChart3 className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <p className="text-red-400 font-semibold mb-2">Error loading stock data</p>
@@ -195,7 +207,7 @@ const NseStockDetails = () => {
   // No stock info available
   if (!stockInfo) {
     return (
-      <div className="h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+      <div className="h-screen bg-linear-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
         <div className="text-center">
           <BarChart3 className="w-16 h-16 text-slate-600 mx-auto mb-4" />
           <p className="text-slate-400 font-semibold mb-4">No stock data available</p>
@@ -216,7 +228,7 @@ const NseStockDetails = () => {
   const borderChangeColor = isNegative ? 'border-red-500/30' : 'border-green-500/30';
 
   return (
-    <div className="h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 overflow-hidden">
+    <div className="h-screen bg-linear-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 overflow-hidden">
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
@@ -244,13 +256,13 @@ const NseStockDetails = () => {
               <Home className="w-5 h-5 text-slate-400 group-hover:text-blue-400 transition-colors" />
             </button>
             
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-violet-600 rounded-xl shadow-lg shadow-blue-500/20">
+            <div className="p-3 bg-linear-to-br from-blue-500 to-violet-600 rounded-xl shadow-lg shadow-blue-500/20">
               <BarChart3 className="w-6 h-6 text-white" />
             </div>
             
             <div className="flex flex-col">
               <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">
+                <h1 className="text-2xl font-bold bg-linear-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">
                   {stockInfo.metaData?.companyName || 'Stock Details'}
                 </h1>
                 <span className="text-sm text-slate-400 bg-slate-800/50 px-3 py-1 rounded-lg border border-slate-700/50">
@@ -353,7 +365,7 @@ const NseStockDetails = () => {
             }`}
           >
             {activeTab === 'trade' && (
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-violet-600 rounded-xl shadow-lg shadow-blue-500/30"></div>
+              <div className="absolute inset-0 bg-linear-to-r from-blue-600 to-violet-600 rounded-xl shadow-lg shadow-blue-500/30"></div>
             )}
             <span className="relative z-10 flex items-center gap-2">
               <Activity className="w-4 h-4" />
@@ -368,7 +380,7 @@ const NseStockDetails = () => {
             }`}
           >
             {activeTab === 'historical' && (
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-violet-600 rounded-xl shadow-lg shadow-blue-500/30"></div>
+              <div className="absolute inset-0 bg-linear-to-r from-blue-600 to-violet-600 rounded-xl shadow-lg shadow-blue-500/30"></div>
             )}
             <span className="relative z-10 flex items-center gap-2">
               <Calendar className="w-4 h-4" />
@@ -382,11 +394,11 @@ const NseStockDetails = () => {
           {activeTab === 'historical' ? (
             <HistoricalData 
               stockInfo={stockInfo}
-              stockData={stockData}
+              chartData={chartData}
             />
           ) : (
             <TradeInformation 
-              stockData={stockData}
+              chartData={chartData}
               stockInfo={stockInfo}
               timeRange={timeRange}
               onTimeRangeChange={setTimeRange}
