@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { RefreshCw, TrendingUp, TrendingDown, Activity, ChevronDown, Wifi, WifiOff, BarChart3, Grid3x3, Table2, Sparkles, ArrowUpRight, ArrowDownRight } from 'lucide-react';
-import socketService from '../services/SocketService';
-import NseStockDetails from './nseStockDetails/NseStockDetails';
-import { StockChartData } from '../services/NseStockDetailsServices';
+import socketService from '../util/socket/SocketService';
+
 
 
 const MostActiveEquity = () => {
@@ -143,7 +142,8 @@ const MostActiveEquity = () => {
     const MAX_ITEMS = 4;
 
     const newEntry = {
-      symbol: item.identifier,
+      symbol: item.symbol,
+      identifier: item.identifier,
     };
 
     const existing =
