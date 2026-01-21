@@ -1,4 +1,4 @@
-
+// util/socket/StockDetailsSocket.js
 import { io } from 'socket.io-client';
 
 class StockDetailsSocketService {
@@ -10,6 +10,7 @@ class StockDetailsSocketService {
     this.currentSubscription = null;
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
+    this.isConnecting = false;
   }
 
   /**
@@ -21,7 +22,13 @@ class StockDetailsSocketService {
       return this.socket;
     }
 
+    if (this.isConnecting) {
+      console.log('⏳ [StockDetails] Connection already in progress');
+      return this.socket;
+    }
+
     console.log(`🔌 [StockDetails] Connecting to ${this.API_BASE}${this.namespace}`);
+    this.isConnecting = true;
 
     this.socket = io(`${this.API_BASE}${this.namespace}`, {
       transports: ['websocket', 'polling'],
@@ -43,22 +50,26 @@ class StockDetailsSocketService {
     this.socket.on('connect', () => {
       console.log(`✅ [StockDetails] Connected: ${this.socket.id}`);
       this.reconnectAttempts = 0;
+      this.isConnecting = false;
       this.emit('connected', { socketId: this.socket.id });
 
       // Resubscribe if there was a previous subscription
       if (this.currentSubscription) {
         console.log('🔄 [StockDetails] Resubscribing after reconnection');
-        this.subscribe(this.currentSubscription.symbol, this.currentSubscription.duration);
+        const { symbol, duration, dataType } = this.currentSubscription;
+        this.doSubscribe(symbol, duration, dataType);
       }
     });
 
     this.socket.on('disconnect', (reason) => {
       console.log(`❌ [StockDetails] Disconnected. Reason: ${reason}`);
+      this.isConnecting = false;
       this.emit('disconnected', { reason });
     });
 
     this.socket.on('connect_error', (error) => {
       this.reconnectAttempts++;
+      this.isConnecting = false;
       console.error(`⚠️ [StockDetails] Connection error (${this.reconnectAttempts}/${this.maxReconnectAttempts}):`, error.message);
       this.emit('error', { 
         error: error.message, 
@@ -72,6 +83,7 @@ class StockDetailsSocketService {
         type: data.type,
         symbol: data.symbol,
         duration: data.duration,
+        dataType: data.dataType,
         timestamp: data.timestamp
       });
       
@@ -94,32 +106,40 @@ class StockDetailsSocketService {
 
   /**
    * Subscribe to stock updates
+   * @param {string} symbol - Stock symbol
+   * @param {string} duration - Time duration (1D, 1W, 1M, 1Y, 5Y)
+   * @param {string} dataType - Type of data ('chart', 'historical', 'live')
    */
-  subscribe(symbol, duration) {
+  subscribe(symbol, duration, dataType = 'chart') {
     if (!this.socket?.connected) {
       console.error('❌ [StockDetails] Cannot subscribe: Socket not connected');
       
       // Connect first, then subscribe
       this.connect();
       this.socket.once('connect', () => {
-        this.doSubscribe(symbol, duration);
+        this.doSubscribe(symbol, duration, dataType);
       });
       return false;
     }
 
-    return this.doSubscribe(symbol, duration);
+    return this.doSubscribe(symbol, duration, dataType);
   }
 
   /**
    * Perform the actual subscription
    */
-  doSubscribe(symbol, duration) {
-    console.log(`📡 [StockDetails] Subscribing to ${symbol} with duration ${duration}`);
+  doSubscribe(symbol, duration, dataType = 'chart') {
+    console.log(`📡 [StockDetails] Subscribing to ${symbol} (duration: ${duration}, type: ${dataType})`);
     
     // Store current subscription for reconnection
-    this.currentSubscription = { symbol, duration };
+    this.currentSubscription = { symbol, duration, dataType };
     
-    this.socket.emit('subscribe', { symbol, duration });
+    this.socket.emit('subscribe', { 
+      symbol, 
+      duration, 
+      dataType,
+      series: 'EQ' 
+    });
     return true;
   }
 
@@ -204,6 +224,7 @@ class StockDetailsSocketService {
       this.currentSubscription = null;
       this.listeners.clear();
       this.reconnectAttempts = 0;
+      this.isConnecting = false;
       console.log('✅ [StockDetails] Disconnected and cleaned up');
     }
   }
