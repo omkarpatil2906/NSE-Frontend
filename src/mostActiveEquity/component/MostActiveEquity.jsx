@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { RefreshCw, TrendingUp, TrendingDown, Activity, ChevronDown, Wifi, WifiOff, BarChart3, Grid3x3, Table2, Sparkles, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import socketService from '../services/SocketService';
-import NseStockDetails from './NseStockDetails';
+import NseStockDetails from './nseStockDetails/NseStockDetails';
 import { StockChartData } from '../services/NseStockDetailsServices';
 
 
@@ -138,25 +138,25 @@ const MostActiveEquity = () => {
   };
 
 
-const openStockDetailsPage = (item) => {
-  const STORAGE_KEY = "chartSymbolHistory";
-  const MAX_ITEMS = 4;
+  const openStockDetailsPage = (item) => {
+    const STORAGE_KEY = "chartSymbolHistory";
+    const MAX_ITEMS = 4;
 
-  const newEntry = {
-    symbol: item.identifier,
+    const newEntry = {
+      symbol: item.identifier,
+    };
+
+    const existing =
+      JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+
+    const filtered = existing.filter(
+      (x) => x.symbol !== newEntry.symbol
+    );
+
+    const updated = [newEntry, ...filtered].slice(0, MAX_ITEMS);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    window.open("/stock-details", "_blank", "noopener,noreferrer");
   };
-
-  const existing =
-    JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-
-  const filtered = existing.filter(
-    (x) => x.symbol !== newEntry.symbol
-  );
-
-  const updated = [newEntry, ...filtered].slice(0, MAX_ITEMS);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  window.open("/stock-details", "_blank", "noopener,noreferrer");
-};
 
 
   const currentTab = tabs.find(t => t.id === activeTab);

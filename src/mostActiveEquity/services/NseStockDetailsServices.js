@@ -5,3 +5,8 @@ export const StockChartData = async (symbol, duration) => {
 
     })
 }
+
+export const StockInfoData = async (symbol) => {
+    return await NseApi.get(`/stock-details/quote/${symbol}`, {
+    })
+}

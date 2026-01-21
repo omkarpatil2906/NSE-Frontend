@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush } from 'recharts';
 import { TrendingUp, TrendingDown, Calendar, BarChart3, Activity, Home, Maximize2, ZoomIn, ZoomOut, Maximize } from 'lucide-react';
-import { StockChartData } from '../services/NseStockDetailsServices';
+import { StockChartData } from '../../services/NseStockDetailsServices';
 import { format } from 'date-fns';
 
 const NseStockDetails = () => {
