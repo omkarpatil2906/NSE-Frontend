@@ -1,5 +1,5 @@
 // components/NseStockDetails.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import { BarChart3, Home, ArrowUpRight, ArrowDownRight, Clock, Activity, Calendar } from 'lucide-react';
 import stockDetailsSocket from '../../util/socket/StockDetailsSocket';
 import TradeInformation from './TradeInformation';
@@ -26,6 +26,7 @@ const NseStockDetails = () => {
   // State management
   const [stockInfo, setStockInfo] = useState(null);
   const [chartData, setChartData] = useState(null);
+  const [historicalData, setHistoricalData] = useState(null);
   const [activeTab, setActiveTab] = useState('trade');
   const [timeRange, setTimeRange] = useState('1D');
   const [lastUpdate, setLastUpdate] = useState(null);
@@ -41,7 +42,7 @@ const NseStockDetails = () => {
     if (activeTab !== 'trade' || !identifier) return;
 
     console.log(`🔄 [Chart] Subscribing to ${identifier} with duration ${timeRange}`);
-    setLoading(true);
+
 
     // Unsubscribe from previous subscription
     stockDetailsSocket.unsubscribe();
@@ -61,9 +62,6 @@ const NseStockDetails = () => {
 
     console.log(`🔄 [Quote] Subscribing to live quote for ${symbol}`);
 
-    // Connect and subscribe to live quote
-    const quoteSocket = stockDetailsSocket.connect();
-
     // Small delay to ensure connection
     setTimeout(() => {
       stockDetailsSocket.subscribeQuote(symbol, 'N', 'EQ');
@@ -73,6 +71,17 @@ const NseStockDetails = () => {
       console.log('🧹 Cleaning up quote subscription');
     };
   }, [symbol]);
+
+  useEffect(() => {
+    if (activeTab !== 'historical' || !symbol) return;
+    console.log(`🔄 [Historical] Subscribing to historical data for ${symbol}`)
+    // Unsubscribe from previous subscription
+    stockDetailsSocket.unsubscribe()
+    // Subscribe to historical data using symbol
+
+    const selectedDate = timeRange; //eg 1D,1W,1M,3M,6M,1Y,5Y
+
+  }, [symbol, activeTab]);
 
   // Socket event listeners
   useEffect(() => {
@@ -382,11 +391,7 @@ const NseStockDetails = () => {
         {/* Content Area */}
         <div className="">
           {activeTab === 'historical' ? (
-            <HistoricalData
-              symbol={symbol}
-              identifier={identifier}
-              stockInfo={stockInfo}
-            />
+            <HistoricalData />
           ) : (
             <TradeInformation
               chartData={chartData}

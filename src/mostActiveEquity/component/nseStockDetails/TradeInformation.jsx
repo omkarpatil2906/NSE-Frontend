@@ -11,9 +11,6 @@ function TradeInformation({ chartData, stockInfo, timeRange, onTimeRangeChange }
     const [brushIndexes, setBrushIndexes] = useState({ startIndex: 0, endIndex: 100 });
     const chartContainerRef = useRef(null);
 
-    console.log(chartData, "trade info", stockInfo);
-
-
     // Process chart data from props (socket data)
     const processedChartData = useMemo(() => {
         if (!chartData || !chartData.graphData || chartData.graphData.length === 0) {
@@ -39,9 +36,6 @@ function TradeInformation({ chartData, stockInfo, timeRange, onTimeRangeChange }
 
         return timeRange === '1D' ? mappedData : mappedData.reverse();
     }, [chartData, timeRange]);
-
-    console.log("Process", processedChartData);
-
 
     // Update brush indexes when chart data changes
     useEffect(() => {
