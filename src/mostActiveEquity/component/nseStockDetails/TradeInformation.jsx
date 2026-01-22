@@ -153,8 +153,8 @@ function TradeInformation({ chartData, stockInfo, timeRange, onTimeRangeChange }
     };
 
     return (
-        <div className="col-span-9 flex flex-col min-h-0">
-            <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl overflow-hidden flex flex-col h-full">
+        <div className="col-span-9 flex gap-4 justify-center items-center">
+            <div className="bg-slate-900/50 w-[75%] backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl overflow-hidden flex flex-col h-full">
                 {/* Chart Controls */}
                 <div className="border-b border-slate-700/50 bg-slate-800/30 p-3">
                     <div className="flex items-center justify-between">
@@ -263,7 +263,7 @@ function TradeInformation({ chartData, stockInfo, timeRange, onTimeRangeChange }
                             </div>
                         </div>
                     ) : (
-                        <ResponsiveContainer width="100%" height={400}>
+                        <ResponsiveContainer width="100%" height={350}>
                             {chartType === 'area' ? (
                                 <AreaChart data={processedChartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                                     <defs>
@@ -348,23 +348,27 @@ function TradeInformation({ chartData, stockInfo, timeRange, onTimeRangeChange }
                                     />
                                 </LineChart>
                             )}
-                        </ResponsiveContainer>     
+                        </ResponsiveContainer>
                     )}
-            </div>
+                </div>
 
-            {/* Note */}
-            <div className="border-t border-slate-700/30 bg-slate-800/20 px-4 py-2">
-                <div className="flex items-center justify-between">
-                    <p className="text-xs text-slate-500 italic">
-                        Note: Prices are historically not adjusted for corporate actions.
-                    </p>
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
-                        <ZoomIn className="w-3 h-3" />
-                        <span>Scroll wheel to zoom • Drag brush to select range</span>
+                {/* Note */}
+                <div className="border-t border-slate-700/30 bg-slate-800/20 px-4 py-2">
+                    <div className="flex items-center justify-between">
+                        <p className="text-xs text-slate-500 italic">
+                            Note: Prices are historically not adjusted for corporate actions.
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                            <ZoomIn className="w-3 h-3" />
+                            <span>Scroll wheel to zoom • Drag brush to select range</span>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+
+            <div className='w-[25%]'>
+                <OrderBook orderBook={stockInfo?.orderBook} />
+            </div>
         </div >
     );
 }
