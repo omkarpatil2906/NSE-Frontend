@@ -10,7 +10,7 @@ function TradeInformation({ chartData, stockInfo, timeRange, onTimeRangeChange }
     const [brushIndexes, setBrushIndexes] = useState({ startIndex: 0, endIndex: 100 });
     const chartContainerRef = useRef(null);
 
-    console.log(chartData, "trade info");
+    console.log(chartData, "trade info", stockInfo);
     
 
     // Process chart data from props (socket data)

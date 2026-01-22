@@ -309,47 +309,34 @@ const NseStockDetails = () => {
         </div>
 
         {/* Price Info Card */}
-        <div className={`${bgChangeColor} border ${borderChangeColor} rounded-2xl p-6 mb-6 backdrop-blur-xl`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-baseline gap-4">
-              <h2 className="text-5xl font-bold text-white">
-                ₹{stockInfo.metaData?.averagePrice || stockInfo.priceInfo?.ltp || '0.00'}
-              </h2>
-              <div className={`flex items-center gap-2 ${priceChangeColor} text-xl font-semibold`}>
-                {isNegative ? (
-                  <ArrowDownRight className="w-6 h-6" />
-                ) : (
-                  <ArrowUpRight className="w-6 h-6" />
-                )}
-                <span>{stockInfo.metaData?.pChange || '0.00'}%</span>
-              </div>
+        {/* Compact Price Header - Replace the big price card */}
+        <div className="flex items-center justify-between mb-4 bg-slate-900/50 backdrop-blur-xl rounded-xl border border-slate-700/50 p-4">
+          <div className="flex items-baseline gap-4">
+            <h2 className="text-3xl font-bold text-white">
+              ₹{stockInfo.metaData?.averagePrice || stockInfo.tradeInfo?.lastPrice || '0.00'}
+            </h2>
+            <div className={`flex items-center gap-2 ${priceChangeColor} text-lg font-semibold`}>
+              {isNegative ? <ArrowDownRight className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
+              <span>{stockInfo.metaData?.pChange || '0.00'}%</span>
             </div>
+          </div>
 
-            <div className="grid grid-cols-4 gap-6">
-              <div className="text-center">
-                <p className="text-xs text-slate-400 mb-1">Open</p>
-                <p className="text-lg font-semibold text-slate-200">
-                  ₹{stockInfo.priceInfo?.open || '0.00'}
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-slate-400 mb-1">High</p>
-                <p className="text-lg font-semibold text-green-400">
-                  ₹{stockInfo.priceInfo?.high || '0.00'}
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-slate-400 mb-1">Low</p>
-                <p className="text-lg font-semibold text-red-400">
-                  ₹{stockInfo.priceInfo?.low || '0.00'}
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-slate-400 mb-1">Prev Close</p>
-                <p className="text-lg font-semibold text-slate-200">
-                  ₹{stockInfo.priceInfo?.prevClose || '0.00'}
-                </p>
-              </div>
+          <div className="flex items-center gap-6">
+            <div className="text-center">
+              <p className="text-xs text-slate-400">Open</p>
+              <p className="text-sm font-semibold text-slate-200">₹{stockInfo.metaData?.open || '0.00'}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-slate-400">High</p>
+              <p className="text-sm font-semibold text-green-400">₹{stockInfo.metaData?.dayHigh || '0.00'}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-slate-400">Low</p>
+              <p className="text-sm font-semibold text-red-400">₹{stockInfo.metaData?.dayLow || '0.00'}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-slate-400">Prev Close</p>
+              <p className="text-sm font-semibold text-slate-200">₹{stockInfo.metaData?.previousClose || '0.00'}</p>
             </div>
           </div>
         </div>
