@@ -265,7 +265,7 @@ function TradeInformation({ chartData, stockInfo, timeRange, onTimeRangeChange }
                             </div>
                         </div>
                     ) : (
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height={400}>
                             {chartType === 'area' ? (
                                 <AreaChart data={processedChartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                                     <defs>
