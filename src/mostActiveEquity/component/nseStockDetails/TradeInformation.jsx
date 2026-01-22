@@ -3,6 +3,7 @@ import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush } from 'recharts';
 import { TrendingUp, Calendar, BarChart3, Activity, ZoomIn, ZoomOut, Maximize } from 'lucide-react';
 import { format } from 'date-fns';
+import OrderBook from './OrderBook';
 
 function TradeInformation({ chartData, stockInfo, timeRange, onTimeRangeChange }) {
     const [chartType, setChartType] = useState('area');
@@ -11,7 +12,7 @@ function TradeInformation({ chartData, stockInfo, timeRange, onTimeRangeChange }
     const chartContainerRef = useRef(null);
 
     console.log(chartData, "trade info", stockInfo);
-    
+
 
     // Process chart data from props (socket data)
     const processedChartData = useMemo(() => {
@@ -35,12 +36,12 @@ function TradeInformation({ chartData, stockInfo, timeRange, onTimeRangeChange }
                     status
                 };
             });
-        
+
         return timeRange === '1D' ? mappedData : mappedData.reverse();
     }, [chartData, timeRange]);
 
     console.log("Process", processedChartData);
-    
+
 
     // Update brush indexes when chart data changes
     useEffect(() => {
@@ -160,7 +161,7 @@ function TradeInformation({ chartData, stockInfo, timeRange, onTimeRangeChange }
                         <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4 text-slate-400" />
                             <span className="text-sm font-semibold text-slate-300">Historical Data</span>
-                           
+
                         </div>
 
                         <div className="flex items-center gap-2">
@@ -198,9 +199,8 @@ function TradeInformation({ chartData, stockInfo, timeRange, onTimeRangeChange }
                                     <button
                                         key={range}
                                         onClick={() => onTimeRangeChange(range)}
-                                        className={`relative px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-300 ${
-                                            timeRange === range ? 'text-white' : 'text-slate-400 hover:text-slate-200'
-                                        }`}
+                                        className={`relative px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-300 ${timeRange === range ? 'text-white' : 'text-slate-400 hover:text-slate-200'
+                                            }`}
                                     >
                                         {timeRange === range && (
                                             <div className="absolute inset-0 bg-linear-to-r from-blue-600 to-violet-600 rounded-md shadow-lg shadow-blue-500/30"></div>
@@ -214,9 +214,8 @@ function TradeInformation({ chartData, stockInfo, timeRange, onTimeRangeChange }
                             <div className="flex gap-1 p-1 bg-slate-800/50 rounded-lg border border-slate-700/50">
                                 <button
                                     onClick={() => setChartType('area')}
-                                    className={`relative p-1.5 rounded-md transition-all duration-300 ${
-                                        chartType === 'area' ? 'text-white' : 'text-slate-400 hover:text-slate-200'
-                                    }`}
+                                    className={`relative p-1.5 rounded-md transition-all duration-300 ${chartType === 'area' ? 'text-white' : 'text-slate-400 hover:text-slate-200'
+                                        }`}
                                     title="Area Chart"
                                 >
                                     {chartType === 'area' && (
@@ -226,9 +225,8 @@ function TradeInformation({ chartData, stockInfo, timeRange, onTimeRangeChange }
                                 </button>
                                 <button
                                     onClick={() => setChartType('line')}
-                                    className={`relative p-1.5 rounded-md transition-all duration-300 ${
-                                        chartType === 'line' ? 'text-white' : 'text-slate-400 hover:text-slate-200'
-                                    }`}
+                                    className={`relative p-1.5 rounded-md transition-all duration-300 ${chartType === 'line' ? 'text-white' : 'text-slate-400 hover:text-slate-200'
+                                        }`}
                                     title="Line Chart"
                                 >
                                     {chartType === 'line' && (
@@ -254,7 +252,7 @@ function TradeInformation({ chartData, stockInfo, timeRange, onTimeRangeChange }
                         </p>
                     </div>
 
-                    
+
 
                     {processedChartData.length === 0 ? (
                         <div className="h-full flex items-center justify-center">
@@ -350,24 +348,24 @@ function TradeInformation({ chartData, stockInfo, timeRange, onTimeRangeChange }
                                     />
                                 </LineChart>
                             )}
-                        </ResponsiveContainer>
+                        </ResponsiveContainer>     
                     )}
-                </div>
+            </div>
 
-                {/* Note */}
-                <div className="border-t border-slate-700/30 bg-slate-800/20 px-4 py-2">
-                    <div className="flex items-center justify-between">
-                        <p className="text-xs text-slate-500 italic">
-                            Note: Prices are historically not adjusted for corporate actions.
-                        </p>
-                        <div className="flex items-center gap-2 text-xs text-slate-500">
-                            <ZoomIn className="w-3 h-3" />
-                            <span>Scroll wheel to zoom • Drag brush to select range</span>
-                        </div>
+            {/* Note */}
+            <div className="border-t border-slate-700/30 bg-slate-800/20 px-4 py-2">
+                <div className="flex items-center justify-between">
+                    <p className="text-xs text-slate-500 italic">
+                        Note: Prices are historically not adjusted for corporate actions.
+                    </p>
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <ZoomIn className="w-3 h-3" />
+                        <span>Scroll wheel to zoom • Drag brush to select range</span>
                     </div>
                 </div>
             </div>
         </div>
+        </div >
     );
 }
 
